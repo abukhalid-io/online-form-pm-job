@@ -168,7 +168,7 @@
   // ============================================================
   // KONFIGURASI - ganti URL ini kalau deployment /exec kamu beda
   // ============================================================
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaxcROPspheh_WtzdNnPobE2UrxBvLfRJkNu9c5KwMgXXZfb6DHYNXC0Zd2X6ItIbRTg/exec';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnAE6QaqyhoogRb6rwpSoaIfVgY5f0wDLgkYA4qpF3yIzYQCmbO09bg0e1FjiIepnDpg/exec';
 
   var STATUS = ["OK","NORMAL","WARNING","ALARM","FAULT","NOT OK","-"];
   var LAMP = ["ON","OFF","-"];
@@ -230,6 +230,17 @@
   var recordsCache = [];
 
   function today(){ var d=new Date(); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  // Backend kadang mengirim Date.toString() penuh, bukan yyyy-MM-dd. Filter tahun
+  // dan pengurutan mengandalkan format ISO, jadi dinormalkan sekali di sini.
+  function normalizeDate(v){
+    var s = (v == null ? '' : String(v)).trim();
+    if (!s) return '';
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  }
   document.getElementById('pwDate').value = today();
 
   // ---------- API helpers ----------
@@ -845,7 +856,7 @@
   function loadRecords(){
     pwDataList.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat data...</div>';
     apiGet('records').then(function(records){
-      recordsCache = records || [];
+      recordsCache = (records || []).map(function(r){ r.date = normalizeDate(r.date); return r; });
       populateYearFilter();
       renderDataList();
     }).catch(function(err){

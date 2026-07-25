@@ -110,7 +110,16 @@ function formatDate_(v) {
   if (v instanceof Date) {
     return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
-  return String(v || '');
+  var s = String(v || '').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // Sel tanggal tidak selalu lolos "instanceof Date" (mis. beda konteks eksekusi),
+  // sehingga tanpa fallback ini frontend menerima Date.toString() penuh.
+  var parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return s;
 }
 
 /** Daftar kode PANEL unik yang sudah pernah diinput (utk grid pilihan panel). */
