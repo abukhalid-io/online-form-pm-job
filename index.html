@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PM Control Panel</title>
 <meta name="theme-color" content="#1a73e8">
+<script>
+  // Dijalankan sebelum halaman digambar supaya tidak ada kedip tema saat reload.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('pmTheme'); } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+  })();
+</script>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,26 +28,34 @@
     --bg-warning: #fef7e0; --text-warning: #b06000;
     --bg-danger: #fce8e6; --text-danger: #c5221f; --border-danger: #c5221f;
     --radius: 8px; --font-mono: 'SFMono-Regular', Consolas, monospace;
+    --page-max: 480px;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --surface-0:#121316; --surface-1:#1c1e22; --surface-2:#1c1e22;
-      --text-primary:#e8e9ec; --text-secondary:#aeb2bb; --text-muted:#797d87; --text-accent:#7fb0ff;
-      --border:#2c2f35; --border-strong:#3c4048; --border-accent:#7fb0ff;
-      --bg-accent:#123056; --fill-accent:#4c8dff; --fill-accent-hover:#699bff; --on-accent:#0b1220;
-      --bg-success:#123021; --text-success:#5fd88a;
-      --bg-warning:#3a2c05; --text-warning:#f2b93d;
-      --bg-danger:#3a1210; --text-danger:#ff8a80; --border-danger:#ff8a80;
-    }
+  /* Dark mode hanya aktif kalau dipilih manual lewat tombol tema. Sengaja TIDAK
+     memakai prefers-color-scheme, supaya tampilan awal selalu terang walaupun
+     sistem/HP pengguna sedang dark mode. */
+  :root[data-theme="dark"] {
+    --surface-0:#121316; --surface-1:#1c1e22; --surface-2:#1c1e22;
+    --text-primary:#e8e9ec; --text-secondary:#aeb2bb; --text-muted:#797d87; --text-accent:#7fb0ff;
+    --border:#2c2f35; --border-strong:#3c4048; --border-accent:#7fb0ff;
+    --bg-accent:#123056; --fill-accent:#4c8dff; --fill-accent-hover:#699bff; --on-accent:#0b1220;
+    --bg-success:#123021; --text-success:#5fd88a;
+    --bg-warning:#3a2c05; --text-warning:#f2b93d;
+    --bg-danger:#3a1210; --text-danger:#ff8a80; --border-danger:#ff8a80;
   }
+  /* Lebar container naik bertahap. Satu variabel dipakai bersama oleh .page dan
+     .pmw-footer supaya footer (position:fixed) tetap sejajar dengan konten. */
+  @media (min-width: 640px)  { :root { --page-max: 720px; } }
+  @media (min-width: 1024px) { :root { --page-max: 980px; } }
+  @media (min-width: 1280px) { :root { --page-max: 1140px; } }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--surface-0); color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
   input, select, textarea, button { font-family: inherit; }
-  .page { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--surface-1); }
+  .page { max-width: var(--page-max); margin: 0 auto; min-height: 100vh; background: var(--surface-1); }
   .pmw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); }
   .pmw-iconbtn { width: 32px; height: 32px; flex-shrink: 0; display: none; align-items: center; justify-content: center; border-radius: var(--radius); background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; }
   .pmw-iconbtn:hover { background: var(--surface-0); }
+  .pmw-iconbtn.theme { display: flex; margin-left: auto; }
   .pmw-header h1 { margin: 0; font-size: 18px; font-weight: 500; }
   .pmw-header p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); }
   .pmw-tabbar { display: flex; border-bottom: 0.5px solid var(--border); }
@@ -54,8 +70,11 @@
   .pmw-card h2 i { color: var(--text-accent); font-size: 14px; margin-right: 4px; vertical-align: -1px; }
   .pmw-card h2 .sub { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--text-muted); margin-left: 4px; }
   .pmw-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .pmw-row.c2 { grid-template-columns: 1fr 1fr; }
-  .pmw-row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  /* auto-fit: kolom kosong dikuncupkan, jadi kartu berisi 2 field (mis. Info panel)
+     tetap melebar penuh, sementara kartu berisi 6-7 field (mis. Cabinet check)
+     otomatis merapat jadi banyak kolom di layar lebar. */
+  .pmw-row.c2 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .pmw-row.c3 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .pmw-field { margin-bottom: 12px; }
   .pmw-field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
   .pmw-field-row { display: flex; gap: 6px; align-items: flex-end; }
@@ -66,13 +85,13 @@
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-accent); box-shadow: 0 0 0 2px var(--bg-accent); }
   textarea.report { font-family: var(--font-mono); font-size: 11.5px; min-height: 260px; white-space: pre; width: 100%; }
-  .pmw-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .pmw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
   .pmw-panelbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 8px; font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
   .pmw-panelbtn i { font-size: 20px; color: var(--text-accent); }
   .pmw-panelbtn:hover { border-color: var(--border-strong); }
   .pmw-hint { font-size: 12px; padding: 8px 10px; border-radius: var(--radius); margin: 4px 0 12px; display: flex; align-items: center; gap: 6px; background: var(--bg-accent); color: var(--text-accent); }
   .pmw-note-hint { font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; }
-  .pmw-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; background: var(--surface-1); padding: 10px 16px; border-top: 0.5px solid var(--border); display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pmw-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: var(--page-max); margin: 0 auto; background: var(--surface-1); padding: 10px 16px; border-top: 0.5px solid var(--border); display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
   .pmw-footer .info { flex: 1 1 100%; font-size: 11px; color: var(--text-muted); }
   .pmw-btn { border: 0.5px solid var(--border-strong); background: transparent; border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--text-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   .pmw-btn:hover { background: var(--surface-0); }
@@ -100,6 +119,20 @@
   .pmw-filter-count { font-size: 11px; color: var(--text-muted); margin: -4px 0 10px; }
   .pmw-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--text-accent); border-radius: 50%; animation: pmw-spin .7s linear infinite; }
   @keyframes pmw-spin { to { transform: rotate(360deg); } }
+  @media (min-width: 640px) {
+    .pmw-header { padding: 16px 20px; }
+    .pmw-header h1 { font-size: 20px; }
+    .pmw-tab { padding: 13px; font-size: 14px; }
+    .pmw-main { padding: 16px; padding-bottom: 96px; }
+    .pmw-footer { padding: 12px 20px; }
+    .pmw-footer .info { flex: 1 1 auto; }
+  }
+  @media (min-width: 1024px) {
+    .page, .pmw-footer { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
+    .pmw-main { padding: 20px; padding-bottom: 96px; }
+    .pmw-card { padding: 1.15rem 1.35rem 0.85rem; }
+    textarea.report { min-height: 340px; font-size: 12.5px; }
+  }
 </style>
 </head>
 <body>
@@ -110,6 +143,7 @@
       <h1 id="pwTitle">PM Control Panel</h1>
       <p id="pwSub">Memuat...</p>
     </div>
+    <button type="button" class="pmw-iconbtn theme" id="pwTheme" aria-label="Ganti tema terang/gelap"><i class="ti ti-moon" aria-hidden="true"></i></button>
   </div>
   <div class="pmw-tabbar" id="pwTabbar">
     <button type="button" class="pmw-tab active" id="pwTabHome"><i class="ti ti-square-plus" aria-hidden="true"></i>Input</button>
@@ -219,6 +253,22 @@
   var pwDataFilterCount = document.getElementById('pwDataFilterCount');
   var pwBanner = document.getElementById('pwBanner');
   var pwBannerText = document.getElementById('pwBannerText');
+  var pwTheme = document.getElementById('pwTheme');
+
+  // ---------- tema (default terang, pilihan disimpan per perangkat) ----------
+  function applyTheme(mode){
+    document.documentElement.setAttribute('data-theme', mode);
+    var icon = pwTheme.querySelector('i');
+    if (icon) icon.className = 'ti ' + (mode === 'dark' ? 'ti-sun' : 'ti-moon');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', mode === 'dark' ? '#1c1e22' : '#1a73e8');
+  }
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+  pwTheme.addEventListener('click', function(){
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('pmTheme', next); } catch (e) {}
+  });
 
   var current = null;
   var componentRegistry = [];
