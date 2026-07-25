@@ -1,0 +1,27 @@
+# Kredensial - repo ini publik, jangan pernah commit rahasia.
+# GOOGLE_PRIVATE_KEY service account ada di .env.local; kalau bocor, siapa pun
+# bisa baca/tulis spreadsheet PM.
+.env
+.env.*
+!.env*.example
+service-account*.json
+*-credentials.json
+
+# Dependencies
+node_modules/
+
+# Next.js / Vercel
+.next/
+out/
+build/
+.vercel/
+
+# Log & cache
+*.log
+npm-debug.log*
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

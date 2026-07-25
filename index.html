@@ -135,6 +135,33 @@
     align-items: center; justify-content: center; border-radius: 50%;
     background: var(--surface-1); border: 1px solid var(--pb-line); }
   .pmw-panelbtn:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.12); }
+  /* Kartu pemilihan modul di menu utama */
+  .pmw-modulegrid { display: grid; gap: 10px; }
+  .pmw-module { --mb-bg: var(--fam-ctrl-bg); --mb-fg: var(--fam-ctrl-fg); --mb-line: var(--fam-ctrl-line);
+    display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; width: 100%;
+    background: var(--mb-bg); border: 1px solid var(--mb-line); border-radius: 14px; padding: 16px;
+    color: var(--mb-fg); transition: transform .12s ease, box-shadow .12s ease; }
+  .pmw-module.mod-gas { --mb-bg: var(--fam-mms-bg); --mb-fg: var(--fam-mms-fg); --mb-line: var(--fam-mms-line); }
+  .pmw-module:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+  .pmw-module .ico { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; border-radius: 12px; background: var(--surface-1);
+    border: 1px solid var(--mb-line); font-size: 22px; }
+  .pmw-module .txt { flex: 1; }
+  .pmw-module .txt strong { display: block; font-size: 15px; font-weight: 600; }
+  .pmw-module .txt small { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; opacity: .78; line-height: 1.35; }
+  .pmw-module .arrow { font-size: 18px; opacity: .5; }
+  /* Timer stabilisasi gas */
+  .pmw-timer { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px;
+    background: var(--bg-accent); border: 1px solid var(--border-accent); margin-bottom: 12px; }
+  .pmw-timer .clock { font-family: var(--font-mono); font-size: 26px; font-weight: 600;
+    color: var(--text-accent); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .pmw-timer .lbl { flex: 1; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+  .pmw-timer.done { background: var(--bg-success); border-color: var(--text-success); }
+  .pmw-timer.done .clock { color: var(--text-success); }
+  .pmw-timer.done .lbl { color: var(--text-success); font-weight: 500; }
+  .pmw-readonly { font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; }
+  .pmw-readonly + .pmw-readonly { border-top: 0.5px dashed var(--border); }
+  .pmw-readonly b { font-weight: 600; color: var(--text-primary); }
   .pmw-hint { font-size: 12px; padding: 8px 10px; border-radius: var(--radius); margin: 4px 0 12px; display: flex; align-items: center; gap: 6px; background: var(--bg-accent); color: var(--text-accent); }
   .pmw-note-hint { font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; }
   .pmw-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: var(--page-max); margin: 0 auto; background: var(--surface-1); padding: 10px 16px; border-top: 0.5px solid var(--border); display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -144,6 +171,7 @@
   .pmw-btn.primary { background: var(--fill-accent); border-color: var(--fill-accent); color: var(--on-accent); }
   .pmw-btn.primary:hover { background: var(--fill-accent-hover); }
   .pmw-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .pmw-btn.block { width: 100%; justify-content: center; margin-top: 4px; }
   .pmw-navbtn { width: 100%; background: transparent; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 10px; font-size: 12.5px; font-weight: 500; color: var(--text-accent); cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
   .pmw-navbtn:hover { background: var(--surface-0); }
   .pmw-datarow { background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
@@ -196,7 +224,27 @@
   </div>
   <div class="pmw-main">
     <div class="pmw-banner" id="pwBanner"><i class="ti ti-circle-check" aria-hidden="true"></i><span id="pwBannerText"></span></div>
-    <div id="pwHome">
+    <div id="pwMenu">
+      <div class="pmw-modulegrid">
+        <button type="button" class="pmw-module mod-cp" id="pwModCp">
+          <span class="ico"><i class="ti ti-server-2" aria-hidden="true"></i></span>
+          <span class="txt">
+            <strong>PM Control Panel</strong>
+            <small>Checklist kabinet, modul dasar, controller, lampu &amp; kipas</small>
+          </span>
+          <i class="ti ti-chevron-right arrow" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="pmw-module mod-gas" id="pwModGas">
+          <span class="ico"><i class="ti ti-gauge" aria-hidden="true"></i></span>
+          <span class="txt">
+            <strong>PM Gas Analyzer</strong>
+            <small>Verifikasi zero &amp; span CO / CO&#8322; / O&#8322;, dengan timer stabilisasi</small>
+          </span>
+          <i class="ti ti-chevron-right arrow" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+    <div id="pwHome" style="display:none;">
       <div class="pmw-card">
         <h2><i class="ti ti-calendar" aria-hidden="true"></i>Tanggal pemeliharaan</h2>
         <div class="pmw-field"><input type="date" id="pwDate"></div>
@@ -235,6 +283,19 @@
         <div id="pwDataList"></div>
       </div>
     </div>
+    <div id="pwGasHome" style="display:none;">
+      <div class="pmw-card">
+        <h2><i class="ti ti-filter" aria-hidden="true"></i>Cari sesi</h2>
+        <div class="pmw-field"><input type="text" id="pwGasSearch" placeholder="Cari ID sesi / analyzer / teknisi..."></div>
+      </div>
+      <button type="button" class="pmw-navbtn" id="pwGasNewBtn"><i class="ti ti-plus" aria-hidden="true"></i>Sesi PM baru</button>
+      <div class="pmw-card">
+        <h2><i class="ti ti-list-details" aria-hidden="true"></i>Sesi PM <span class="sub" id="pwGasCount"></span></h2>
+        <div id="pwGasList"></div>
+      </div>
+    </div>
+    <div id="pwGasSesi" style="display:none;"></div>
+    <div id="pwGasIter" style="display:none;"></div>
   </div>
   <div class="pmw-footer" id="pwFooter">
     <div class="info">Kolom kosong otomatis "-"</div>
@@ -369,31 +430,59 @@
   }
 
   // ---------- navigasi ----------
+  // Satu tempat untuk semua pengaturan layar: mana yang tampil, tombol apa yang
+  // aktif, dan ke mana tombol kembali menuju. Sebelumnya tersebar di tiap fungsi
+  // dan mudah tidak sinkron begitu jumlah layar bertambah.
+  var SCREENS = ['pwMenu','pwHome','pwForm','pwData','pwGasHome','pwGasSesi','pwGasIter'];
+  var backAction = null;
+
+  function showScreen(id){
+    if (id !== 'pwGasIter') stopGasTimer();
+    SCREENS.forEach(function(s){
+      var el = document.getElementById(s);
+      if (el) el.style.display = (s === id ? 'block' : 'none');
+    });
+  }
+  function setChrome(o){
+    pwFooter.style.display = o.footer ? 'flex' : 'none';
+    pwBack.style.display   = o.back ? 'flex' : 'none';
+    pwBrand.style.display  = o.back ? 'none' : 'flex';
+    pwTabbar.style.display = o.tabbar ? 'flex' : 'none';
+    pwTitle.textContent = o.title;
+    pwSub.textContent = o.sub;
+    backAction = o.backTo || goMenu;
+  }
   function setTab(tab){
     pwTabHome.classList.toggle('active', tab === 'home');
     pwTabData.classList.toggle('active', tab === 'data');
   }
+
+  function goMenu(){
+    showScreen('pwMenu');
+    setChrome({ title: 'Aplikasi PM', sub: 'Pilih modul pemeliharaan' });
+    current = null; editingRowIndex = null; cameFromData = false;
+  }
   function goHome(){
-    pwForm.style.display = 'none'; pwData.style.display = 'none'; pwHome.style.display = 'block';
-    pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
-    pwBrand.style.display = 'flex';
-    pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Pilih panel untuk mulai input data';
+    showScreen('pwHome');
+    setChrome({ back: true, tabbar: true, backTo: goMenu,
+      title: 'PM Control Panel', sub: 'Pilih panel untuk mulai input data' });
     current = null; editingRowIndex = null; cameFromData = false;
     setTab('home');
     loadPanelList();
   }
   function goData(){
-    pwForm.style.display = 'none'; pwHome.style.display = 'none'; pwData.style.display = 'block';
-    pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
-    pwBrand.style.display = 'flex';
-    pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Semua data PM yang sudah diinput';
+    showScreen('pwData');
+    setChrome({ back: true, tabbar: true, backTo: goMenu,
+      title: 'PM Control Panel', sub: 'Semua data PM yang sudah diinput' });
     current = null;
     setTab('data');
     loadRecords();
   }
-  pwBack.addEventListener('click', function(){ cameFromData ? goData() : goHome(); });
+  pwBack.addEventListener('click', function(){ if (backAction) backAction(); });
   pwTabHome.addEventListener('click', goHome);
   pwTabData.addEventListener('click', goData);
+  document.getElementById('pwModCp').addEventListener('click', goHome);
+  document.getElementById('pwModGas').addEventListener('click', goGasHome);
 
   // ---------- Home: daftar panel ----------
   function loadPanelList(){
@@ -513,10 +602,9 @@
     current = panel;
     editingRowIndex = prefillRecord ? prefillRecord.rowIndex : null;
     componentRegistry = [];
-    pwHome.style.display = 'none'; pwData.style.display = 'none'; pwForm.style.display = 'block';
-    pwFooter.style.display = 'flex'; pwBack.style.display = 'flex'; pwTabbar.style.display = 'none';
-    pwBrand.style.display = 'none';
-    pwTitle.textContent = panel; pwSub.textContent = editingRowIndex ? 'Edit data tersimpan' : 'Memuat data panel...';
+    showScreen('pwForm');
+    setChrome({ back: true, footer: true, backTo: cameFromData ? goData : goHome,
+      title: panel, sub: editingRowIndex ? 'Edit data tersimpan' : 'Memuat data panel...' });
     pwForm.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat...</div>';
 
     if (prefillRecord) {
@@ -1076,6 +1164,382 @@
     });
   });
 
+  // ============================================================
+  // MODUL PM GAS ANALYZER (CO / CO2 / O2)
+  // ============================================================
+  var GAS_WAIT_SECONDS = 5 * 60;   // stabilisasi gas sebelum pembacaan dianggap sah
+  var GAS_MAX_ITERASI = 10;        // batas per sesi, dicek juga di backend
+  var GAS_TAHAP = ['Verifikasi Awal', 'Verifikasi Akhir', 'Setelah Kalibrasi'];
+  var GAS_TOLERANSI_DEFAULT = 2;
+
+  var gasSessionCache = [];
+  var gasDetailCache = [];
+  var gasCurrentSesi = null;
+  var gasTimerTick = null;
+
+  var pwGasList = document.getElementById('pwGasList');
+  var pwGasCount = document.getElementById('pwGasCount');
+  var pwGasSearch = document.getElementById('pwGasSearch');
+
+  function numberInput(id, placeholder, value){
+    var i = document.createElement('input');
+    i.type = 'number'; i.step = 'any'; i.id = id;
+    if (placeholder) i.placeholder = placeholder;
+    if (value !== undefined && value !== null) i.value = value;
+    return i;
+  }
+  function gasNow(){
+    var d = new Date(), p = function(n){ return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' +
+           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  // ---------- timer stabilisasi ----------
+  // Waktu mulai disimpan di localStorage, bukan di memori, supaya hitung mundur
+  // tetap benar walau halaman di-refresh atau app ditutup sebentar di lapangan.
+  function gasTimerKey(idPm, no){ return 'pmGasTimer:' + idPm + ':' + no; }
+  function gasTimerSisa(key){
+    var t;
+    try { t = localStorage.getItem(key); } catch (e) { t = null; }
+    if (!t) return null;
+    return Math.max(GAS_WAIT_SECONDS - Math.floor((Date.now() - Number(t)) / 1000), 0);
+  }
+  function gasTimerMulai(key){ try { localStorage.setItem(key, String(Date.now())); } catch (e) {} }
+  function gasTimerHapus(key){ try { localStorage.removeItem(key); } catch (e) {} }
+  function gasFormatJam(detik){
+    return String(Math.floor(detik / 60)).padStart(2, '0') + ':' + String(detik % 60).padStart(2, '0');
+  }
+  function stopGasTimer(){
+    if (gasTimerTick) { clearInterval(gasTimerTick); gasTimerTick = null; }
+  }
+
+  // ---------- daftar sesi PM ----------
+  function goGasHome(){
+    showScreen('pwGasHome');
+    setChrome({ back: true, backTo: goMenu, title: 'PM Gas Analyzer', sub: 'Daftar sesi verifikasi' });
+    gasCurrentSesi = null;
+    loadGasSessions();
+  }
+  function loadGasSessions(){
+    pwGasList.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat sesi PM...</div>';
+    apiGet('gasHeaders').then(function(list){
+      gasSessionCache = list || [];
+      renderGasList();
+    }).catch(function(err){
+      pwGasCount.textContent = '';
+      pwGasList.innerHTML = '<div class="pmw-empty"><i class="ti ti-alert-circle" aria-hidden="true"></i>' + err.message + '</div>';
+    });
+  }
+  function renderGasList(){
+    var q = (pwGasSearch.value || '').trim().toLowerCase();
+    var items = gasSessionCache.filter(function(s){
+      if (!q) return true;
+      return [s.id_pm, s.id_analyzer, s.teknisi, s.jenis_gas].join(' ').toLowerCase().indexOf(q) > -1;
+    }).slice().reverse();
+
+    pwGasCount.textContent = '(' + gasSessionCache.length + ' sesi)';
+    pwGasList.innerHTML = '';
+    if (!items.length){
+      pwGasList.innerHTML = '<div class="pmw-empty"><i class="ti ti-inbox" aria-hidden="true"></i>Belum ada sesi PM. Mulai lewat tombol "Sesi PM baru".</div>';
+      return;
+    }
+    items.forEach(function(s){
+      var wrap = document.createElement('div'); wrap.className = 'pmw-datarow';
+      var top = document.createElement('div'); top.className = 'pmw-datarow-top';
+      var left = document.createElement('div');
+      left.innerHTML = '<div class="panel"><i class="ti ti-gauge" aria-hidden="true"></i>' + (s.id_analyzer || '-') + '</div>' +
+        '<div class="date">' + (s.id_pm || '-') + (s.tanggal ? ' &middot; ' + s.tanggal : '') +
+        (s.jenis_gas ? ' &middot; ' + s.jenis_gas : '') + '</div>';
+      var selesai = String(s.status_akhir || '').toLowerCase().indexOf('selesai') > -1;
+      var pill = document.createElement('span');
+      pill.className = 'pmw-statuspill ' + (selesai ? 'good' : 'medium');
+      pill.innerHTML = '<i class="ti ' + (selesai ? 'ti-circle-check' : 'ti-clock') + '" aria-hidden="true"></i>' + (s.status_akhir || 'Berjalan');
+      top.appendChild(left); top.appendChild(pill);
+      wrap.appendChild(top);
+
+      var act = document.createElement('div'); act.className = 'pmw-datarow-actions';
+      var open = document.createElement('button');
+      open.type = 'button'; open.className = 'pmw-mini-btn';
+      open.innerHTML = '<i class="ti ti-square-plus" aria-hidden="true"></i>Input iterasi' +
+        (s.jumlah_iterasi ? ' (' + s.jumlah_iterasi + ')' : '');
+      open.addEventListener('click', function(){ openGasIter(s); });
+      act.appendChild(open);
+      wrap.appendChild(act);
+      pwGasList.appendChild(wrap);
+    });
+  }
+  pwGasSearch.addEventListener('input', renderGasList);
+  document.getElementById('pwGasNewBtn').addEventListener('click', openGasSesi);
+
+  // ---------- form sesi baru ----------
+  function openGasSesi(){
+    showScreen('pwGasSesi');
+    setChrome({ back: true, backTo: goGasHome, title: 'Sesi PM baru', sub: 'Identitas sesi verifikasi analyzer' });
+    var wrap = document.getElementById('pwGasSesi');
+    wrap.innerHTML = '';
+
+    var c1 = card('Identitas sesi', null, 'ti-info-circle'); var r1 = row('c2');
+    var tgl = document.createElement('input'); tgl.type = 'date'; tgl.id = 'pwGasTanggal'; tgl.value = today();
+    r1.appendChild(field('Tanggal', tgl));
+    r1.appendChild(field('ID Analyzer', plainText('', 'cth: AI-101', 'pwGasAnalyzer')));
+    r1.appendChild(field('Teknisi', plainText('', 'nama teknisi', 'pwGasTeknisi')));
+    c1.appendChild(r1); wrap.appendChild(c1);
+
+    var c2 = card('Tabung gas', 'zero & span', 'ti-bolt'); var r2 = row('c2');
+    r2.appendChild(field('ID Tabung Zero', plainText('', 'cth: TZ-01', 'pwGasTabungZero')));
+    r2.appendChild(field('ID Tabung Span', plainText('', 'cth: TS-01', 'pwGasTabungSpan')));
+    r2.appendChild(field('Tekanan Zero', plainText('', 'cth: 120 bar', 'pwGasTekananZero')));
+    r2.appendChild(field('Tekanan Span', plainText('', 'cth: 115 bar', 'pwGasTekananSpan')));
+    c2.appendChild(r2); wrap.appendChild(c2);
+
+    var c3 = card('Catatan', null, 'ti-notes');
+    var ta = document.createElement('textarea'); ta.id = 'pwGasCatatan'; ta.rows = 2; ta.placeholder = 'Opsional';
+    c3.appendChild(field('Catatan sesi', ta)); wrap.appendChild(c3);
+
+    var save = document.createElement('button');
+    save.type = 'button'; save.className = 'pmw-btn primary block';
+    save.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Buat sesi PM';
+    save.addEventListener('click', function(){ simpanGasSesi(save); });
+    wrap.appendChild(save);
+  }
+  function simpanGasSesi(btn){
+    var analyzer = (document.getElementById('pwGasAnalyzer').value || '').trim();
+    if (!analyzer) { showBanner('ID Analyzer wajib diisi.', true); return; }
+    var val = function(id, def){ var v = (document.getElementById(id).value || '').trim(); return v || def; };
+    var payload = {
+      tanggal: document.getElementById('pwGasTanggal').value,
+      id_analyzer: analyzer,
+      teknisi: val('pwGasTeknisi', '-'),
+      id_tabung_zero: val('pwGasTabungZero', '-'),
+      id_tabung_span: val('pwGasTabungSpan', '-'),
+      tekanan_zero: val('pwGasTekananZero', '-'),
+      tekanan_span: val('pwGasTekananSpan', '-'),
+      catatan: document.getElementById('pwGasCatatan').value || ''
+    };
+    var label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="pmw-spinner" aria-hidden="true"></span> Menyimpan...';
+    apiPost('gasHeaderSubmit', { data: payload }).then(function(res){
+      showBanner(res.message || 'Sesi PM dibuat.');
+      goGasHome();
+    }).catch(function(err){
+      showBanner('Gagal membuat sesi: ' + err.message, true);
+      btn.disabled = false; btn.innerHTML = label;
+    });
+  }
+
+  // ---------- layar iterasi ----------
+  function openGasIter(sesi){
+    gasCurrentSesi = sesi;
+    showScreen('pwGasIter');
+    setChrome({ back: true, backTo: goGasHome, title: sesi.id_analyzer || sesi.id_pm, sub: 'Memuat iterasi...' });
+    var wrap = document.getElementById('pwGasIter');
+    wrap.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat iterasi...</div>';
+    apiGet('gasDetails', { id_pm: sesi.id_pm }).then(function(list){
+      gasDetailCache = list || [];
+      buildGasIter();
+    }).catch(function(err){
+      // Nomor iterasi berikutnya dihitung dari data yang sudah ada. Kalau data itu
+      // gagal dimuat, form sengaja TIDAK ditampilkan - menebak nomornya berisiko
+      // membuat iterasi bernomor ganda di sheet.
+      wrap.innerHTML = '';
+      var c = card('Gagal memuat iterasi', null, 'ti-alert-circle');
+      var p = document.createElement('div'); p.className = 'pmw-empty'; p.textContent = err.message;
+      c.appendChild(p);
+      var retry = document.createElement('button');
+      retry.type = 'button'; retry.className = 'pmw-btn block';
+      retry.innerHTML = '<i class="ti ti-refresh" aria-hidden="true"></i>Coba lagi';
+      retry.addEventListener('click', function(){ openGasIter(sesi); });
+      c.appendChild(retry); wrap.appendChild(c);
+    });
+  }
+  function buildGasIter(){
+    var sesi = gasCurrentSesi;
+    var wrap = document.getElementById('pwGasIter');
+    wrap.innerHTML = '';
+
+    var nextNo = gasDetailCache.length + 1;
+    var penuh = nextNo > GAS_MAX_ITERASI;
+    setChrome({ back: true, backTo: goGasHome, title: sesi.id_analyzer || sesi.id_pm,
+      sub: penuh ? 'Iterasi sudah penuh' : 'Iterasi berikutnya: ke-' + nextNo });
+
+    var cInfo = card('Sesi', sesi.id_pm, 'ti-info-circle');
+    [['Tanggal', sesi.tanggal], ['Analyzer', sesi.id_analyzer], ['Jenis gas', sesi.jenis_gas],
+     ['Teknisi', sesi.teknisi],
+     ['Tabung zero / span', (sesi.id_tabung_zero || '-') + ' / ' + (sesi.id_tabung_span || '-')],
+     ['Tekanan zero / span', (sesi.tekanan_zero || '-') + ' / ' + (sesi.tekanan_span || '-')]
+    ].forEach(function(p){
+      var d = document.createElement('div'); d.className = 'pmw-readonly';
+      d.innerHTML = '<span>' + p[0] + '</span><b>' + (p[1] || '-') + '</b>';
+      cInfo.appendChild(d);
+    });
+    wrap.appendChild(cInfo);
+
+    if (penuh){
+      var cFull = card('Batas iterasi tercapai', null, 'ti-alert-circle');
+      var e = document.createElement('div'); e.className = 'pmw-empty';
+      e.textContent = 'Sesi ini sudah mencapai ' + GAS_MAX_ITERASI + ' iterasi. Buat sesi PM baru bila masih perlu verifikasi lanjutan.';
+      cFull.appendChild(e); wrap.appendChild(cFull);
+    } else {
+      wrap.appendChild(buildGasIterForm(sesi, nextNo));
+    }
+
+    var cList = card('Iterasi tersimpan', '(' + gasDetailCache.length + ')', 'ti-list-details');
+    if (!gasDetailCache.length){
+      var em = document.createElement('div'); em.className = 'pmw-empty';
+      em.innerHTML = '<i class="ti ti-inbox" aria-hidden="true"></i>Belum ada iterasi pada sesi ini.';
+      cList.appendChild(em);
+    } else {
+      gasDetailCache.slice().sort(function(a, b){ return Number(a.no_iterasi) - Number(b.no_iterasi); })
+        .forEach(function(d){ cList.appendChild(gasIterRow(d)); });
+    }
+    wrap.appendChild(cList);
+  }
+  function buildGasIterForm(sesi, no){
+    var c = card('Input iterasi ke-' + no, 'catat setelah gas stabil', 'ti-square-plus');
+    var key = gasTimerKey(sesi.id_pm, no);
+
+    var timer = document.createElement('div'); timer.className = 'pmw-timer'; timer.id = 'pwGasTimer';
+    var clock = document.createElement('div'); clock.className = 'clock'; clock.id = 'pwGasClock';
+    var lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.id = 'pwGasTimerLbl';
+    var tbtn = document.createElement('button'); tbtn.type = 'button'; tbtn.className = 'pmw-mini-btn'; tbtn.id = 'pwGasTimerBtn';
+    timer.appendChild(clock); timer.appendChild(lbl); timer.appendChild(tbtn);
+    c.appendChild(timer);
+
+    var r = row('c2');
+    r.appendChild(field('Tahap', select(GAS_TAHAP, GAS_TAHAP[0], 'pwGasTahap')));
+    r.appendChild(field('Pembacaan Zero', numberInput('pwGasZero', 'cth: 0.02')));
+    r.appendChild(field('Pembacaan Span', numberInput('pwGasSpan', 'cth: 49.8')));
+    r.appendChild(field('Toleransi Zero (%)', numberInput('pwGasTolZero', '', GAS_TOLERANSI_DEFAULT)));
+    r.appendChild(field('Toleransi Span (%)', numberInput('pwGasTolSpan', '', GAS_TOLERANSI_DEFAULT)));
+    r.appendChild(field('Tindakan kalibrasi', plainText('', 'opsional', 'pwGasTindakan')));
+    c.appendChild(r);
+
+    var ta = document.createElement('textarea'); ta.id = 'pwGasIterCatatan'; ta.rows = 2; ta.placeholder = 'Opsional';
+    c.appendChild(field('Catatan', ta));
+
+    var save = document.createElement('button');
+    save.type = 'button'; save.className = 'pmw-btn primary block'; save.id = 'pwGasSaveIter';
+    save.addEventListener('click', function(){ simpanGasIter(sesi, no, save); });
+    c.appendChild(save);
+
+    // Timer dirender setelah kartu masuk DOM (elemen dicari lewat getElementById).
+    setTimeout(function(){ startGasTimerUI(key); }, 0);
+    return c;
+  }
+  function startGasTimerUI(key){
+    var timer = document.getElementById('pwGasTimer');
+    if (!timer) return;
+    var clock = document.getElementById('pwGasClock');
+    var lbl = document.getElementById('pwGasTimerLbl');
+    var tbtn = document.getElementById('pwGasTimerBtn');
+    var save = document.getElementById('pwGasSaveIter');
+    var lastState = null;
+
+    function setEnabled(on){
+      ['pwGasZero', 'pwGasSpan'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.disabled = !on;
+      });
+      if (save){
+        save.disabled = !on;
+        save.innerHTML = on ? '<i class="ti ti-device-floppy" aria-hidden="true"></i>Catat pembacaan'
+                            : '<i class="ti ti-clock" aria-hidden="true"></i>Tunggu stabilisasi dulu';
+      }
+    }
+    function render(){
+      var sisa = gasTimerSisa(key);
+      var state = sisa === null ? 'idle' : (sisa > 0 ? 'wait' : 'done');
+      if (state === 'wait') clock.textContent = gasFormatJam(sisa);
+      if (state === lastState) return;          // hanya tulis ulang saat status berubah
+      lastState = state;
+      if (state === 'idle'){
+        timer.className = 'pmw-timer';
+        clock.textContent = gasFormatJam(GAS_WAIT_SECONDS);
+        lbl.textContent = 'Alirkan gas, lalu mulai hitung mundur stabilisasi ' + (GAS_WAIT_SECONDS / 60) + ' menit.';
+        tbtn.textContent = 'Mulai';
+        setEnabled(false);
+      } else if (state === 'wait'){
+        timer.className = 'pmw-timer';
+        lbl.textContent = 'Menunggu stabilisasi gas. Hitung mundur tetap jalan walau halaman ditutup.';
+        tbtn.textContent = 'Ulangi';
+        setEnabled(false);
+      } else {
+        timer.className = 'pmw-timer done';
+        clock.textContent = '00:00';
+        lbl.textContent = 'Gas sudah stabil - silakan catat pembacaan.';
+        tbtn.textContent = 'Ulangi';
+        setEnabled(true);
+      }
+    }
+    tbtn.addEventListener('click', function(){
+      gasTimerHapus(key); gasTimerMulai(key);
+      lastState = null; render();
+    });
+    render();
+    stopGasTimer();
+    gasTimerTick = setInterval(render, 1000);
+  }
+  function simpanGasIter(sesi, no, btn){
+    var zero = document.getElementById('pwGasZero').value;
+    var span = document.getElementById('pwGasSpan').value;
+    if (zero === '' && span === ''){
+      showBanner('Isi minimal salah satu pembacaan (zero atau span).', true);
+      return;
+    }
+    var payload = {
+      id_pm: sesi.id_pm,
+      no_iterasi: no,
+      tahap: document.getElementById('pwGasTahap').value,
+      waktu: gasNow(),
+      pembacaan_zero: zero,
+      pembacaan_span: span,
+      toleransi_zero: document.getElementById('pwGasTolZero').value,
+      toleransi_span: document.getElementById('pwGasTolSpan').value,
+      tindakan_kalibrasi: (document.getElementById('pwGasTindakan').value || '').trim(),
+      catatan: document.getElementById('pwGasIterCatatan').value || ''
+    };
+    var label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="pmw-spinner" aria-hidden="true"></span> Menyimpan...';
+    apiPost('gasDetailSubmit', { data: payload }).then(function(res){
+      gasTimerHapus(gasTimerKey(sesi.id_pm, no));
+      showBanner(res.message || 'Iterasi tersimpan.');
+      openGasIter(sesi);                       // muat ulang supaya nomor iterasi ikut naik
+    }).catch(function(err){
+      showBanner('Gagal menyimpan iterasi: ' + err.message, true);
+      btn.disabled = false; btn.innerHTML = label;
+    });
+  }
+  function gasIterRow(d){
+    var wrap = document.createElement('div'); wrap.className = 'pmw-datarow';
+    var top = document.createElement('div'); top.className = 'pmw-datarow-top';
+    var left = document.createElement('div');
+    left.innerHTML = '<div class="panel"><i class="ti ti-square-plus" aria-hidden="true"></i>Iterasi ke-' + (d.no_iterasi || '?') + '</div>' +
+      '<div class="date">' + (d.tahap || '-') + (d.waktu ? ' &middot; ' + d.waktu : '') + '</div>';
+    top.appendChild(left);
+    if (d.status){
+      var st = String(d.status).toLowerCase();
+      var cls = (st.indexOf('lulus') > -1 || st.indexOf('pass') > -1 || st.indexOf('ok') > -1) ? 'good'
+              : ((st.indexOf('gagal') > -1 || st.indexOf('fail') > -1) ? 'high' : 'medium');
+      var pill = document.createElement('span');
+      pill.className = 'pmw-statuspill ' + cls;
+      pill.textContent = d.status;
+      top.appendChild(pill);
+    }
+    wrap.appendChild(top);
+    [['Zero', d.pembacaan_zero, d.standar_zero, d.deviasi_zero],
+     ['Span', d.pembacaan_span, d.standar_span, d.deviasi_span]].forEach(function(p){
+      var r = document.createElement('div'); r.className = 'pmw-readonly';
+      r.innerHTML = '<span>' + p[0] + ' &middot; baca / standar / deviasi</span><b>' +
+        (p[1] || '-') + ' / ' + (p[2] || '-') + ' / ' + (p[3] || '-') + '</b>';
+      wrap.appendChild(r);
+    });
+    if (d.peringatan){
+      var w = document.createElement('div'); w.className = 'pmw-readonly';
+      w.innerHTML = '<span>Peringatan</span><b>' + d.peringatan + '</b>';
+      wrap.appendChild(w);
+    }
+    return wrap;
+  }
+
   // ---------- PWA: registrasi service worker ----------
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function(){
@@ -1083,7 +1547,7 @@
     });
   }
 
-  goHome();
+  goMenu();
 })();
 </script>
 </body>

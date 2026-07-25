@@ -59,6 +59,10 @@ function doGet(e) {
       result = { success: true, data: getPanelTemplate(e.parameter.panel) };
     } else if (action === 'records') {
       result = { success: true, data: getAllRecords() };
+    } else if (action === 'gasHeaders') {
+      result = { success: true, data: gasGetHeaders() };
+    } else if (action === 'gasDetails') {
+      result = { success: true, data: gasGetDetails(e.parameter.id_pm) };
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -79,6 +83,10 @@ function doPost(e) {
       result = updateRecord(body.rowIndex, body.data);
     } else if (action === 'delete') {
       result = deleteRecord(body.rowIndex);
+    } else if (action === 'gasHeaderSubmit') {
+      result = gasSubmitHeader(body.data);
+    } else if (action === 'gasDetailSubmit') {
+      result = gasSubmitDetail(body.data);
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -331,4 +339,147 @@ function getAllRecords() {
     records.push(parseRowToRecord_(row, 3 + i));
   }
   return records;
+}
+
+/* ============================================================================
+ * PM GAS ANALYZER (CO / CO2 / O2)
+ * ----------------------------------------------------------------------------
+ * Spreadsheet TERPISAH dari ControlPanel. Isi ID-nya di GAS_SPREADSHEET_ID
+ * di bawah, ambil dari URL sheet PM Analyzer:
+ *   https://docs.google.com/spreadsheets/d/<INI_ID_NYA>/edit
+ *
+ * Struktur (data mulai baris 5, baris 1-3 judul, baris 4 header):
+ *   PM_Header         A..M  -> D & J adalah FORMULA (Jenis Gas, Jumlah Iterasi)
+ *   PM_Detail_Iterasi A..Q  -> H,I,L,M,N,P adalah FORMULA
+ *                              (Standar Zero/Span, Deviasi Zero/Span, Status, Peringatan)
+ *
+ * Penulisan sengaja dipecah per blok kolom supaya sel formula TIDAK PERNAH
+ * ditimpa. Menulis satu baris penuh akan menghapus rumusnya.
+ * ==========================================================================*/
+
+var GAS_SPREADSHEET_ID = '';               // <-- WAJIB DIISI
+var GAS_HEADER_SHEET = 'PM_Header';
+var GAS_DETAIL_SHEET = 'PM_Detail_Iterasi';
+var GAS_DATA_START_ROW = 5;
+
+// Nomor kolom (A=1). Dipakai untuk menurunkan rumus ke baris baru.
+var GAS_HEADER_FORMULA_COLS = [4, 10];              // D, J
+var GAS_DETAIL_FORMULA_COLS = [8, 9, 12, 13, 14, 16]; // H, I, L, M, N, P
+
+function getGasSheet_(name) {
+  if (!GAS_SPREADSHEET_ID) {
+    throw new Error('GAS_SPREADSHEET_ID belum diisi di Code.gs - modul Gas Analyzer belum aktif.');
+  }
+  var sheet = SpreadsheetApp.openById(GAS_SPREADSHEET_ID).getSheetByName(name);
+  if (!sheet) throw new Error('Sheet "' + name + '" tidak ditemukan di spreadsheet Gas Analyzer.');
+  return sheet;
+}
+
+/**
+ * Baca baris data sebagai teks tampilan. getDisplayValues dipakai (bukan
+ * getValues) supaya hasil formula ikut terbaca dan tanggal keluar sesuai format
+ * sheet - bukan Date.toString() yang bikin frontend harus menormalkan lagi.
+ */
+function gasReadRows_(sheetName, lastCol) {
+  var sheet = getGasSheet_(sheetName);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < GAS_DATA_START_ROW) return [];
+  return sheet.getRange(GAS_DATA_START_ROW, 1, lastRow - GAS_DATA_START_ROW + 1, lastCol)
+    .getDisplayValues()
+    .filter(function (r) { return String(r[0]).trim() !== ''; });
+}
+
+/**
+ * Tambah 1 baris, hanya menulis blok kolom yang boleh diisi app.
+ * chunks: [{ start: <kolom awal>, values: [...] }]
+ */
+function gasAppendRow_(sheetName, chunks, formulaCols) {
+  var sheet = getGasSheet_(sheetName);
+  var newRow = Math.max(sheet.getLastRow(), GAS_DATA_START_ROW - 1) + 1;
+
+  chunks.forEach(function (c) {
+    sheet.getRange(newRow, c.start, 1, c.values.length).setValues([c.values]);
+  });
+
+  // Turunkan rumus dari baris di atas HANYA kalau sel target masih kosong.
+  // Pola fill-down: sel kosong -> rumus disalin. Pola ARRAYFORMULA: sel sudah
+  // terisi otomatis -> dilewati, jadi ARRAYFORMULA-nya tidak dirusak.
+  if (newRow > GAS_DATA_START_ROW) {
+    formulaCols.forEach(function (col) {
+      var target = sheet.getRange(newRow, col);
+      if (target.getFormula() === '' && String(target.getValue()) === '') {
+        var src = sheet.getRange(newRow - 1, col);
+        if (src.getFormula() !== '') src.copyTo(target);
+      }
+    });
+  }
+
+  SpreadsheetApp.flush();
+  return newRow;
+}
+
+function gasTimestampId_(prefix) {
+  return prefix + '-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
+}
+
+/** Semua sesi PM (PM_Header) sebagai object siap pakai frontend. */
+function gasGetHeaders() {
+  return gasReadRows_(GAS_HEADER_SHEET, 13).map(function (r) {
+    return {
+      id_pm: r[0], tanggal: r[1], id_analyzer: r[2], jenis_gas: r[3], teknisi: r[4],
+      id_tabung_zero: r[5], id_tabung_span: r[6], tekanan_zero: r[7], tekanan_span: r[8],
+      jumlah_iterasi: r[9], status_akhir: r[10], waktu_selesai: r[11], catatan: r[12]
+    };
+  });
+}
+
+/** Iterasi verifikasi; kalau id_pm diisi, hanya untuk sesi tersebut. */
+function gasGetDetails(idPm) {
+  var rows = gasReadRows_(GAS_DETAIL_SHEET, 17);
+  if (idPm) rows = rows.filter(function (r) { return r[1] === idPm; });
+  return rows.map(function (r) {
+    return {
+      id_detail: r[0], id_pm: r[1], no_iterasi: r[2], tahap: r[3], waktu: r[4],
+      pembacaan_zero: r[5], pembacaan_span: r[6], standar_zero: r[7], standar_span: r[8],
+      toleransi_zero: r[9], toleransi_span: r[10], deviasi_zero: r[11], deviasi_span: r[12],
+      status: r[13], tindakan_kalibrasi: r[14], peringatan: r[15], catatan: r[16]
+    };
+  });
+}
+
+function gasSubmitHeader(data) {
+  if (!data) throw new Error('Data sesi kosong.');
+  if (!data.id_analyzer) throw new Error('ID Analyzer wajib diisi.');
+  var id = data.id_pm || gasTimestampId_('PM');
+
+  gasAppendRow_(GAS_HEADER_SHEET, [
+    { start: 1,  values: [id, data.tanggal || '', data.id_analyzer] },                     // A-C
+    { start: 5,  values: [data.teknisi || '-', data.id_tabung_zero || '-',                 // E-I
+                          data.id_tabung_span || '-', data.tekanan_zero || '-',
+                          data.tekanan_span || '-'] },
+    { start: 11, values: [data.status_akhir || 'Berjalan',                                 // K-M
+                          data.waktu_selesai || '', data.catatan || ''] }
+  ], GAS_HEADER_FORMULA_COLS);
+
+  return { success: true, id_pm: id, message: 'Sesi PM ' + id + ' dibuat.' };
+}
+
+function gasSubmitDetail(data) {
+  if (!data || !data.id_pm) throw new Error('id_pm wajib diisi.');
+  var iterasi = Number(data.no_iterasi || 0);
+  if (!iterasi || iterasi < 1) throw new Error('Nomor iterasi tidak valid.');
+  if (iterasi > 10) throw new Error('Iterasi maksimal 10 per sesi PM.');
+  var id = data.id_detail || gasTimestampId_('DET');
+
+  gasAppendRow_(GAS_DETAIL_SHEET, [
+    { start: 1,  values: [id, data.id_pm, iterasi, data.tahap || '', data.waktu || '',     // A-G
+                          data.pembacaan_zero === undefined ? '' : data.pembacaan_zero,
+                          data.pembacaan_span === undefined ? '' : data.pembacaan_span] },
+    { start: 10, values: [data.toleransi_zero === undefined ? '' : data.toleransi_zero,    // J-K
+                          data.toleransi_span === undefined ? '' : data.toleransi_span] },
+    { start: 15, values: [data.tindakan_kalibrasi || ''] },                                // O
+    { start: 17, values: [data.catatan || ''] }                                            // Q
+  ], GAS_DETAIL_FORMULA_COLS);
+
+  return { success: true, id_detail: id, message: 'Iterasi ke-' + iterasi + ' tersimpan.' };
 }
