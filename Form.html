@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Input PM Control Panel</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #0b57cf;
+      --green: #1e8e3e;
+      --bg: #f2f4f7;
+      --card: #ffffff;
+      --text: #202124;
+      --muted: #5f6368;
+      --border: #dadce0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    }
+    header .headRow { display: flex; align-items: center; gap: 10px; }
+    header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+    header p { margin: 2px 0 0; font-size: 12px; opacity: .85; }
+    .backBtn {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 12px 100px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 16px 6px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(60,64,67,.15);
+    }
+    .card h2 {
+      font-size: 14px;
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .card h2 .sub {
+      text-transform: none;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 560px) {
+      .row.cols-2 { grid-template-columns: 1fr 1fr; }
+      .row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field-wrap { position: relative; display: flex; align-items: center; gap: 6px; }
+    input[type="text"], input[type="date"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+    }
+    textarea { min-height: 60px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(26,115,232,.15);
+    }
+    .btn-na {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 10px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-na.active { background: #eef1f4; border-color: #9aa0a6; color: var(--text); font-weight: 600; }
+    .hint {
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin: 4px 0 14px;
+    }
+    .hint.new { background: #fef7e0; color: #8a6d00; }
+    .hint.ready { background: #e6f4ea; color: #1e8e3e; }
+    .required { color: #d93025; }
+
+    /* ---- panel grid (screen home) ---- */
+    .searchWrap { margin-bottom: 12px; }
+    .panelGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    @media (min-width: 560px) {
+      .panelGrid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .panelBtn {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(60,64,67,.1);
+    }
+    .panelBtn:active { background: #eef1f4; }
+    .addPanelBtn {
+      width: 100%;
+      margin-top: 14px;
+      background: #fff;
+      border: 1.5px dashed var(--primary);
+      color: var(--primary-dark);
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .emptyMsg { font-size: 13px; color: var(--muted); padding: 10px 2px; }
+
+    footer {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      display: none;
+      gap: 10px;
+      z-index: 20;
+    }
+    footer .info { flex: 1; font-size: 12px; color: var(--muted); align-self: center; }
+    button.submit {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 22px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 78px;
+      transform: translateX(-50%) translateY(10px);
+      background: #202124;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 30;
+      max-width: 90%;
+      text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: #d93025; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="headRow">
+      <button type="button" class="backBtn" id="backBtn" style="display:none;">&larr; Kembali</button>
+      <div>
+        <h1 id="headTitle">PM Control Panel</h1>
+        <p id="headSub">Pilih panel untuk mulai input data</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===== SCREEN 1: HOME - pilih tanggal & panel ===== -->
+    <div id="screenHome">
+      <div class="card">
+        <h2>Tanggal Pemeliharaan</h2>
+        <div class="field">
+          <input type="date" id="f_homeDate">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Pilih Panel</h2>
+        <div class="searchWrap">
+          <input type="text" id="panelSearch" placeholder="Cari kode panel...">
+        </div>
+        <div class="panelGrid" id="panelGrid"></div>
+        <div class="emptyMsg" id="panelEmptyMsg" style="display:none;">Belum ada data panel. Tambah panel baru di bawah.</div>
+        <button type="button" class="addPanelBtn" id="addPanelBtn">+ Tambah Panel Baru</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 2: FORM - isi komponen untuk 1 panel ===== -->
+    <div id="screenForm" style="display:none;">
+      <div class="card">
+        <div class="row cols-2">
+          <div class="field">
+            <label>Tanggal</label>
+            <input type="date" id="f_date">
+          </div>
+          <div class="field">
+            <label>Kode Panel</label>
+            <input type="text" id="f_panelDisplay" disabled>
+          </div>
+        </div>
+        <div id="panelHint"></div>
+      </div>
+
+      <div id="dynamicSections"></div>
+    </div>
+
+  </main>
+
+  <div id="toast"></div>
+
+  <footer id="footer">
+    <div class="info">Kolom kosong otomatis "-"</div>
+    <button type="button" class="submit" id="submitBtn">Simpan Data</button>
+  </footer>
+
+  <script>
+    // ---- Field katalog untuk MODE MANUAL (panel baru / belum ada histori) ----
+    // Daftar status yang lebih variatif, dipakai konsisten di semua field status
+    // (bebas ketik juga kalau perlu istilah lain - ini cuma daftar saran cepat).
+    const STATUS_OPTIONS = ['OK', 'NORMAL', 'WARNING', 'ALARM', 'FAULT', 'NOT OK', '-'];
+    const LAMP_OPTIONS = ['ON', 'OFF', '-'];
+    const FAN_STATUS_OPTIONS = ['ON', 'OFF', '-'];
+
+    const MANUAL_GROUPS = [
+      {
+        title: 'Modul Dasar',
+        cols: 3,
+        fields: [
+          { key: 'breaker', label: 'Breaker', options: STATUS_OPTIONS },
+          { key: 'psu24vdc', label: 'PSU 24 VDC', options: STATUS_OPTIONS },
+          { key: 'switchHub', label: 'Switch Hub', options: STATUS_OPTIONS },
+          { key: 'fuseBoard', label: 'Fuse Board', options: STATUS_OPTIONS },
+          { key: 'resistorBoard', label: 'Resistor Board', options: STATUS_OPTIONS },
+          { key: 'barier', label: 'Barier', options: STATUS_OPTIONS }
+        ]
+      },
+      {
+        title: 'Controller C1 - C3',
+        cols: 2,
+        fields: [
+          { key: 'c1', label: 'C1 - Tipe/Merk', options: ['TRICONEX', '3500 BENTLY NEVADA', '-'] },
+          { key: 'c1Status', label: 'C1 - Status', options: STATUS_OPTIONS },
+          { key: 'c2', label: 'C2 - Tipe/Merk', options: ['TRICONEX', '3500 BENTLY NEVADA', '-'] },
+          { key: 'c2Status', label: 'C2 - Status', options: STATUS_OPTIONS },
+          { key: 'c3', label: 'C3 - Tipe/Merk', options: ['TRICONEX', '3500 BENTLY NEVADA', '-'] },
+          { key: 'c3Status', label: 'C3 - Status', options: STATUS_OPTIONS }
+        ]
+      },
+      {
+        title: 'C4 (Wood Ward)',
+        cols: 2,
+        fields: [
+          { key: 'c4', label: 'C4 - Tipe', options: ['WOOD WARD', '-'] },
+          { key: 'c4ma', label: 'Modul A - Nilai RPM', options: [], free: true },
+          { key: 'c4maStatus', label: 'Modul A - Status', options: STATUS_OPTIONS },
+          { key: 'c4mb', label: 'Modul B - Nilai RPM', options: [], free: true },
+          { key: 'c4mbStatus', label: 'Modul B - Status', options: STATUS_OPTIONS },
+          { key: 'c4mc', label: 'Modul C - Nilai RPM', options: [], free: true },
+          { key: 'c4mcStatus', label: 'Modul C - Status', options: STATUS_OPTIONS }
+        ]
+      },
+      {
+        title: 'Lampu & Kipas',
+        cols: 2,
+        fields: [
+          { key: 'lamp1', label: 'Lamp 1', options: LAMP_OPTIONS },
+          { key: 'lamp2', label: 'Lamp 2', options: LAMP_OPTIONS },
+          { key: 'fan1Status', label: 'Fan 1 - Status', options: FAN_STATUS_OPTIONS },
+          { key: 'fan1Ampere', label: 'Fan 1 - Nilai Ampere', options: [], free: true },
+          { key: 'fan2Status', label: 'Fan 2 - Status', options: FAN_STATUS_OPTIONS },
+          { key: 'fan2Ampere', label: 'Fan 2 - Nilai Ampere', options: [], free: true }
+        ]
+      }
+    ];
+
+    const ALL_DYNAMIC_KEYS = [
+      'breaker', 'psu24vdc', 'switchHub', 'fuseBoard', 'resistorBoard', 'barier',
+      'c1', 'c1Status', 'c2', 'c2Status', 'c3', 'c3Status',
+      'c4', 'c4ma', 'c4maStatus', 'c4mb', 'c4mbStatus', 'c4mc', 'c4mcStatus',
+      'lamp1', 'lamp2', 'fan1Status', 'fan1Ampere', 'fan2Status', 'fan2Ampere'
+    ];
+
+    const screenHome = document.getElementById('screenHome');
+    const screenForm = document.getElementById('screenForm');
+    const backBtn = document.getElementById('backBtn');
+    const headTitle = document.getElementById('headTitle');
+    const headSub = document.getElementById('headSub');
+    const footer = document.getElementById('footer');
+    const submitBtn = document.getElementById('submitBtn');
+    const toastEl = document.getElementById('toast');
+    const dynamicSections = document.getElementById('dynamicSections');
+    const panelHint = document.getElementById('panelHint');
+    const panelGrid = document.getElementById('panelGrid');
+    const panelSearch = document.getElementById('panelSearch');
+    const panelEmptyMsg = document.getElementById('panelEmptyMsg');
+
+    let autoValues = {};
+    let currentPanel = '';
+    let allPanels = [];
+
+    function todayStr() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+    document.getElementById('f_homeDate').value = todayStr();
+
+    function showToast(msg, isError) {
+      toastEl.textContent = msg;
+      toastEl.className = isError ? 'show error' : 'show';
+      setTimeout(() => { toastEl.className = ''; }, 3200);
+    }
+
+    function formatDateForSheet(isoDate) {
+      if (!isoDate) return '';
+      const [y, m, d] = isoDate.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return d + '-' + months[parseInt(m, 10) - 1] + '-' + y.slice(2);
+    }
+
+    // ---------- SCREEN switching ----------
+    function goHome() {
+      screenForm.style.display = 'none';
+      screenHome.style.display = 'block';
+      footer.style.display = 'none';
+      backBtn.style.display = 'none';
+      headTitle.textContent = 'PM Control Panel';
+      headSub.textContent = 'Pilih panel untuk mulai input data';
+      currentPanel = '';
+      autoValues = {};
+      dynamicSections.innerHTML = '';
+      panelHint.innerHTML = '';
+      refreshPanelList();
+    }
+
+    function goToForm(panelTag) {
+      currentPanel = panelTag;
+      screenHome.style.display = 'none';
+      screenForm.style.display = 'block';
+      footer.style.display = 'flex';
+      backBtn.style.display = 'inline-block';
+      headTitle.textContent = panelTag;
+      headSub.textContent = 'Isi status / nilai komponen';
+
+      document.getElementById('f_date').value = document.getElementById('f_homeDate').value || todayStr();
+      document.getElementById('f_panelDisplay').value = panelTag;
+      dynamicSections.innerHTML = '<p style="color:#5f6368;font-size:13px;">Memuat data panel...</p>';
+      panelHint.innerHTML = '';
+
+      google.script.run
+        .withSuccessHandler(tpl => {
+          if (tpl.found) {
+            renderAuto(tpl);
+            panelHint.innerHTML = '<div class="hint ready">Komponen otomatis dimuat dari histori. Tinggal isi status/nilainya.</div>';
+          } else {
+            renderManual();
+            panelHint.innerHTML = '<div class="hint new">Panel baru / belum ada histori. Isi komponen yang tersedia (klik "Tidak Ada" untuk yang tidak ada).</div>';
+          }
+        })
+        .withFailureHandler(err => {
+          showToast('Gagal memuat data panel: ' + err.message, true);
+          renderManual();
+        })
+        .getPanelTemplate(panelTag);
+    }
+
+    backBtn.addEventListener('click', goHome);
+
+    // ---------- panel grid (home) ----------
+    function refreshPanelList() {
+      panelGrid.innerHTML = '';
+      panelEmptyMsg.style.display = 'block';
+      panelEmptyMsg.textContent = 'Memuat daftar panel...';
+      google.script.run
+        .withSuccessHandler(list => {
+          allPanels = list;
+          renderPanelGrid(panelSearch.value);
+        })
+        .withFailureHandler(err => {
+          panelEmptyMsg.textContent = 'Gagal memuat daftar panel: ' + err.message;
+          showToast('Gagal memuat daftar panel: ' + err.message, true);
+        })
+        .getPanelList();
+    }
+
+    function renderPanelGrid(filterText) {
+      const f = (filterText || '').trim().toLowerCase();
+      const filtered = f ? allPanels.filter(p => p.toLowerCase().includes(f)) : allPanels;
+      panelGrid.innerHTML = '';
+      panelEmptyMsg.textContent = 'Belum ada data panel. Tambah panel baru di bawah.';
+      panelEmptyMsg.style.display = filtered.length ? 'none' : 'block';
+      filtered.forEach(p => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panelBtn';
+        btn.textContent = p;
+        btn.addEventListener('click', () => goToForm(p));
+        panelGrid.appendChild(btn);
+      });
+    }
+
+    panelSearch.addEventListener('input', () => renderPanelGrid(panelSearch.value));
+
+    document.getElementById('addPanelBtn').addEventListener('click', () => {
+      const tag = window.prompt('Ketik kode panel baru:');
+      if (tag && tag.trim()) goToForm(tag.trim());
+    });
+
+    // ---------- builder generik ----------
+    function buildCard(title, sub) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const h2 = document.createElement('h2');
+      h2.innerHTML = title + (sub ? ' <span class="sub">' + sub + '</span>' : '');
+      card.appendChild(h2);
+      return card;
+    }
+
+    function buildRow(cols) {
+      const row = document.createElement('div');
+      row.className = 'row cols-' + (cols || 1);
+      return row;
+    }
+
+    function buildSelectField(key, label, options, defaultVal) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      wrap.appendChild(lab);
+
+      const select = document.createElement('select');
+      select.id = 'f_' + key;
+      options.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        if (opt === defaultVal) o.selected = true;
+        select.appendChild(o);
+      });
+      wrap.appendChild(select);
+      return wrap;
+    }
+
+    function buildTextField(key, label, placeholder, value, listOptions) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      wrap.appendChild(lab);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'f_' + key;
+      if (placeholder) input.placeholder = placeholder;
+      if (value) input.value = value;
+      if (listOptions && listOptions.length) {
+        const listId = key + 'QuickList';
+        input.setAttribute('list', listId);
+        const dl = document.createElement('datalist');
+        dl.id = listId;
+        listOptions.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt;
+          dl.appendChild(o);
+        });
+        wrap.appendChild(dl);
+      }
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    function buildComboField(f) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = f.label;
+      wrap.appendChild(lab);
+
+      const fieldWrap = document.createElement('div');
+      fieldWrap.className = 'field-wrap';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'f_' + f.key;
+      input.value = '-';
+      if (!f.free) {
+        const listId = f.key + 'OptList';
+        input.setAttribute('list', listId);
+        const dl = document.createElement('datalist');
+        dl.id = listId;
+        f.options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt;
+          dl.appendChild(o);
+        });
+        fieldWrap.appendChild(dl);
+      } else {
+        input.placeholder = 'cth: 0,15';
+      }
+      fieldWrap.appendChild(input);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-na active';
+      btn.textContent = 'Tidak Ada';
+      btn.title = 'Tandai komponen ini tidak ada pada panel';
+      btn.addEventListener('click', () => {
+        input.value = '-';
+        btn.classList.add('active');
+      });
+      input.addEventListener('input', () => {
+        const v = input.value.trim();
+        btn.classList.toggle('active', v === '-' || v === '');
+      });
+      fieldWrap.appendChild(btn);
+
+      wrap.appendChild(fieldWrap);
+      return wrap;
+    }
+
+    // Kondisi & Catatan - selalu tampil bareng form komponen (mode auto maupun manual)
+    function appendConditionNoteCard() {
+      const card = buildCard('Kondisi & Catatan');
+      const row = buildRow(1);
+      row.appendChild(buildSelectField('panelCondition', 'Kondisi Panel', ['CLEAN', 'DIRTY', '-'], 'CLEAN'));
+
+      const noteWrap = document.createElement('div');
+      noteWrap.className = 'field';
+      const lab = document.createElement('label');
+      lab.textContent = 'Catatan';
+      noteWrap.appendChild(lab);
+      const ta = document.createElement('textarea');
+      ta.id = 'f_note';
+      ta.placeholder = 'Catatan tambahan (opsional)';
+      noteWrap.appendChild(ta);
+      row.appendChild(noteWrap);
+
+      card.appendChild(row);
+      dynamicSections.appendChild(card);
+    }
+
+    // ---------- render MODE MANUAL (panel baru, belum ada histori) ----------
+    function renderManual() {
+      autoValues = {};
+      dynamicSections.innerHTML = '';
+      MANUAL_GROUPS.forEach(group => {
+        const card = buildCard(group.title);
+        const row = buildRow(group.cols);
+        group.fields.forEach(f => row.appendChild(buildComboField(f)));
+        card.appendChild(row);
+        dynamicSections.appendChild(card);
+      });
+      appendConditionNoteCard();
+    }
+
+    // ---------- render MODE AUTO (panel dikenali dari histori) ----------
+    function renderAuto(tpl) {
+      autoValues = {};
+      dynamicSections.innerHTML = '';
+
+      const basic = [
+        { key: 'breaker', label: 'Breaker', on: tpl.breaker },
+        { key: 'psu24vdc', label: 'PSU 24 VDC', on: tpl.psu24vdc },
+        { key: 'switchHub', label: 'Switch Hub', on: tpl.switchHub },
+        { key: 'fuseBoard', label: 'Fuse Board', on: tpl.fuseBoard },
+        { key: 'resistorBoard', label: 'Resistor Board', on: tpl.resistorBoard },
+        { key: 'barier', label: 'Barier', on: tpl.barier }
+      ].filter(f => f.on);
+      if (basic.length) {
+        const card = buildCard('Modul Dasar');
+        const row = buildRow(3);
+        basic.forEach(f => row.appendChild(buildSelectField(f.key, f.label, STATUS_OPTIONS, 'OK')));
+        card.appendChild(row);
+        dynamicSections.appendChild(card);
+      }
+
+      ['1', '2', '3'].forEach(n => {
+        const comp = tpl['c' + n];
+        if (!comp || !comp.exists) return;
+        autoValues['c' + n] = comp.type;
+        const card = buildCard('Controller C' + n, comp.type);
+        const row = buildRow(1);
+        row.appendChild(buildSelectField('c' + n + 'Status', 'Status', STATUS_OPTIONS, 'OK'));
+        card.appendChild(row);
+        dynamicSections.appendChild(card);
+      });
+
+      if (tpl.c4 && tpl.c4.exists) {
+        autoValues.c4 = tpl.c4.type;
+        const subFields = [];
+        ['ma', 'mb', 'mc'].forEach(sub => {
+          const m = tpl['c4' + sub];
+          if (m && m.exists) {
+            const letter = sub.slice(1).toUpperCase();
+            const lastVal = m.id !== '-' ? m.id : '';
+            subFields.push(buildTextField(
+              'c4' + sub,
+              'Modul ' + letter + ' - Nilai RPM',
+              'cth: ' + (lastVal || '5484'),
+              lastVal
+            ));
+            subFields.push(buildSelectField(
+              'c4' + sub + 'Status',
+              'Modul ' + letter + ' - Status',
+              STATUS_OPTIONS, 'OK'
+            ));
+          }
+        });
+        if (subFields.length) {
+          const card = buildCard('C4', tpl.c4.type);
+          const row = buildRow(2);
+          subFields.forEach(el => row.appendChild(el));
+          card.appendChild(row);
+          dynamicSections.appendChild(card);
+        }
+      }
+
+      const lf = [];
+      if (tpl.lamp1) lf.push(buildSelectField('lamp1', 'Lamp 1', LAMP_OPTIONS, 'ON'));
+      if (tpl.lamp2) lf.push(buildSelectField('lamp2', 'Lamp 2', LAMP_OPTIONS, 'ON'));
+      if (tpl.fan1) {
+        lf.push(buildSelectField('fan1Status', 'Fan 1 - Status', FAN_STATUS_OPTIONS, 'ON'));
+        lf.push(buildTextField('fan1Ampere', 'Fan 1 - Nilai Ampere', 'cth: 0,15', tpl.fan1Last !== '-' ? tpl.fan1Last : ''));
+      }
+      if (tpl.fan2) {
+        lf.push(buildSelectField('fan2Status', 'Fan 2 - Status', FAN_STATUS_OPTIONS, 'ON'));
+        lf.push(buildTextField('fan2Ampere', 'Fan 2 - Nilai Ampere', 'cth: 0,15', tpl.fan2Last !== '-' ? tpl.fan2Last : ''));
+      }
+      if (lf.length) {
+        const card = buildCard('Lampu & Kipas');
+        const row = buildRow(2);
+        lf.forEach(el => row.appendChild(el));
+        card.appendChild(row);
+        dynamicSections.appendChild(card);
+      }
+
+      appendConditionNoteCard();
+    }
+
+    // ---------- submit ----------
+    function collectData() {
+      const data = {};
+      data.date = formatDateForSheet(document.getElementById('f_date').value);
+      data.panel = currentPanel;
+      const pc = document.getElementById('f_panelCondition');
+      data.panelCondition = pc ? (pc.value.trim() || '-') : '-';
+      const note = document.getElementById('f_note');
+      data.note = note ? note.value.trim() : '';
+
+      ALL_DYNAMIC_KEYS.forEach(key => {
+        if (Object.prototype.hasOwnProperty.call(autoValues, key)) {
+          data[key] = autoValues[key];
+          return;
+        }
+        const el = document.getElementById('f_' + key);
+        data[key] = el ? (el.value.trim() || '-') : '-';
+      });
+      return data;
+    }
+
+    submitBtn.addEventListener('click', () => {
+      if (!currentPanel) {
+        showToast('Pilih panel dulu.', true);
+        return;
+      }
+      const data = collectData();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Simpan Data';
+          showToast(res.message || 'Data tersimpan.');
+          setTimeout(goHome, 700);
+        })
+        .withFailureHandler(err => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Simpan Data';
+          showToast('Gagal menyimpan: ' + err.message, true);
+        })
+        .submitPmData(data);
+    });
+
+    refreshPanelList();
+  </script>
+</body>
+</html>

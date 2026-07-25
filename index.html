@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PM Control Panel</title>
+<meta name="theme-color" content="#1a73e8">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+  :root {
+    --surface-0: #f1f3f6; --surface-1: #ffffff; --surface-2: #ffffff;
+    --text-primary: #1f2430; --text-secondary: #5f6470; --text-muted: #9498a3; --text-accent: #1a73e8;
+    --border: #e3e5ea; --border-strong: #c7cbd4; --border-accent: #1a73e8;
+    --bg-accent: #e8f0fe; --fill-accent: #1a73e8; --fill-accent-hover: #1558b0; --on-accent: #ffffff;
+    --bg-success: #e6f4ea; --text-success: #1e7e34;
+    --bg-warning: #fef7e0; --text-warning: #b06000;
+    --bg-danger: #fce8e6; --text-danger: #c5221f; --border-danger: #c5221f;
+    --radius: 8px; --font-mono: 'SFMono-Regular', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-0:#121316; --surface-1:#1c1e22; --surface-2:#1c1e22;
+      --text-primary:#e8e9ec; --text-secondary:#aeb2bb; --text-muted:#797d87; --text-accent:#7fb0ff;
+      --border:#2c2f35; --border-strong:#3c4048; --border-accent:#7fb0ff;
+      --bg-accent:#123056; --fill-accent:#4c8dff; --fill-accent-hover:#699bff; --on-accent:#0b1220;
+      --bg-success:#123021; --text-success:#5fd88a;
+      --bg-warning:#3a2c05; --text-warning:#f2b93d;
+      --bg-danger:#3a1210; --text-danger:#ff8a80; --border-danger:#ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--surface-0); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  input, select, textarea, button { font-family: inherit; }
+  .page { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--surface-1); }
+  .pmw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); }
+  .pmw-iconbtn { width: 32px; height: 32px; flex-shrink: 0; display: none; align-items: center; justify-content: center; border-radius: var(--radius); background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; }
+  .pmw-iconbtn:hover { background: var(--surface-0); }
+  .pmw-header h1 { margin: 0; font-size: 18px; font-weight: 500; }
+  .pmw-header p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); }
+  .pmw-tabbar { display: flex; border-bottom: 0.5px solid var(--border); }
+  .pmw-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -0.5px; }
+  .pmw-tab.active { color: var(--text-accent); border-bottom-color: var(--border-accent); }
+  .pmw-main { padding: 12px; padding-bottom: 90px; }
+  .pmw-banner { display: none; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; padding: 10px 12px; border-radius: var(--radius); margin-bottom: 12px; }
+  .pmw-banner.success { background: var(--bg-success); color: var(--text-success); }
+  .pmw-banner.danger { background: var(--bg-danger); color: var(--text-danger); }
+  .pmw-card { background: var(--surface-2); border-radius: 12px; padding: 1rem 1.1rem 0.75rem; margin-bottom: 12px; border: 0.5px solid var(--border); }
+  .pmw-card h2 { font-size: 12px; margin: 0 0 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; font-weight: 500; }
+  .pmw-card h2 i { color: var(--text-accent); font-size: 14px; margin-right: 4px; vertical-align: -1px; }
+  .pmw-card h2 .sub { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--text-muted); margin-left: 4px; }
+  .pmw-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .pmw-row.c2 { grid-template-columns: 1fr 1fr; }
+  .pmw-row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .pmw-field { margin-bottom: 12px; }
+  .pmw-field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+  .pmw-field-row { display: flex; gap: 6px; align-items: flex-end; }
+  .pmw-field-row .pmw-field { flex: 1; margin-bottom: 0; }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--radius);
+    font-size: 13px; background: var(--surface-1); color: var(--text-primary);
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-accent); box-shadow: 0 0 0 2px var(--bg-accent); }
+  textarea.report { font-family: var(--font-mono); font-size: 11.5px; min-height: 260px; white-space: pre; width: 100%; }
+  .pmw-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .pmw-panelbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 8px; font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
+  .pmw-panelbtn i { font-size: 20px; color: var(--text-accent); }
+  .pmw-panelbtn:hover { border-color: var(--border-strong); }
+  .pmw-hint { font-size: 12px; padding: 8px 10px; border-radius: var(--radius); margin: 4px 0 12px; display: flex; align-items: center; gap: 6px; background: var(--bg-accent); color: var(--text-accent); }
+  .pmw-note-hint { font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; }
+  .pmw-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; background: var(--surface-1); padding: 10px 16px; border-top: 0.5px solid var(--border); display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pmw-footer .info { flex: 1 1 100%; font-size: 11px; color: var(--text-muted); }
+  .pmw-btn { border: 0.5px solid var(--border-strong); background: transparent; border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--text-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .pmw-btn:hover { background: var(--surface-0); }
+  .pmw-btn.primary { background: var(--fill-accent); border-color: var(--fill-accent); color: var(--on-accent); }
+  .pmw-btn.primary:hover { background: var(--fill-accent-hover); }
+  .pmw-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .pmw-navbtn { width: 100%; background: transparent; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 10px; font-size: 12.5px; font-weight: 500; color: var(--text-accent); cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .pmw-navbtn:hover { background: var(--surface-0); }
+  .pmw-datarow { background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
+  .pmw-datarow-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .pmw-datarow .panel { font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .pmw-datarow .panel i { font-size: 14px; color: var(--text-accent); }
+  .pmw-datarow .date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .pmw-statuspill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 500; }
+  .pmw-statuspill.good { background: var(--bg-success); color: var(--text-success); }
+  .pmw-statuspill.medium { background: var(--bg-warning); color: var(--text-warning); }
+  .pmw-statuspill.high { background: var(--bg-danger); color: var(--text-danger); }
+  .pmw-datarow-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .pmw-mini-btn { font-size: 11px; padding: 5px 10px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .pmw-mini-btn:hover { background: var(--surface-0); }
+  .pmw-mini-btn.danger { color: var(--text-danger); border-color: var(--border-danger); }
+  .pmw-empty { font-size: 12px; color: var(--text-muted); padding: 20px 0; text-align: center; }
+  .pmw-empty i { font-size: 22px; display: block; margin-bottom: 6px; }
+  .pmw-inline-report { margin-top: 10px; padding-top: 10px; border-top: 0.5px dashed var(--border); }
+  .pmw-filter-count { font-size: 11px; color: var(--text-muted); margin: -4px 0 10px; }
+  .pmw-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--text-accent); border-radius: 50%; animation: pmw-spin .7s linear infinite; }
+  @keyframes pmw-spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pmw-header">
+    <button type="button" class="pmw-iconbtn" id="pwBack" aria-label="Kembali"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <div>
+      <h1 id="pwTitle">PM Control Panel</h1>
+      <p id="pwSub">Memuat...</p>
+    </div>
+  </div>
+  <div class="pmw-tabbar" id="pwTabbar">
+    <button type="button" class="pmw-tab active" id="pwTabHome"><i class="ti ti-square-plus" aria-hidden="true"></i>Input</button>
+    <button type="button" class="pmw-tab" id="pwTabData"><i class="ti ti-list-details" aria-hidden="true"></i>Data tersimpan</button>
+  </div>
+  <div class="pmw-main">
+    <div class="pmw-banner" id="pwBanner"><i class="ti ti-circle-check" aria-hidden="true"></i><span id="pwBannerText"></span></div>
+    <div id="pwHome">
+      <div class="pmw-card">
+        <h2><i class="ti ti-calendar" aria-hidden="true"></i>Tanggal pemeliharaan</h2>
+        <div class="pmw-field"><input type="date" id="pwDate"></div>
+      </div>
+      <div class="pmw-card">
+        <h2><i class="ti ti-server-2" aria-hidden="true"></i>Pilih panel</h2>
+        <div class="pmw-field"><input type="text" id="pwSearch" placeholder="Cari kode panel..."></div>
+        <div class="pmw-grid" id="pwGrid"></div>
+      </div>
+      <button type="button" class="pmw-navbtn" id="pwAddPanel"><i class="ti ti-plus" aria-hidden="true"></i>Tambah panel baru</button>
+    </div>
+    <div id="pwForm" style="display:none;"></div>
+    <div id="pwData" style="display:none;">
+      <div class="pmw-card">
+        <h2><i class="ti ti-filter" aria-hidden="true"></i>Filter</h2>
+        <div class="pmw-field"><input type="text" id="pwDataSearch" placeholder="Filter kode panel..."></div>
+        <div class="pmw-row c2">
+          <div class="pmw-field">
+            <label>Status report</label>
+            <select id="pwDataStatus">
+              <option value="">Semua status</option>
+              <option value="good">GOOD</option>
+              <option value="medium">MINOR ISSUE</option>
+              <option value="high">NEEDS ATTENTION</option>
+            </select>
+          </div>
+          <div class="pmw-field">
+            <label>Tahun</label>
+            <select id="pwDataYear"></select>
+          </div>
+        </div>
+        <div class="pmw-filter-count" id="pwDataFilterCount"></div>
+      </div>
+      <div class="pmw-card">
+        <h2><i class="ti ti-database" aria-hidden="true"></i>Data tersimpan <span class="sub" id="pwDataCount"></span></h2>
+        <div id="pwDataList"></div>
+      </div>
+    </div>
+  </div>
+  <div class="pmw-footer" id="pwFooter">
+    <div class="info">Kolom kosong otomatis "-"</div>
+    <button type="button" class="pmw-btn" id="pwReportBtn"><i class="ti ti-file-text" aria-hidden="true"></i>Generate report</button>
+    <button type="button" class="pmw-btn primary" id="pwSubmit"><i class="ti ti-device-floppy" aria-hidden="true"></i>Simpan data</button>
+  </div>
+</div>
+<script>
+(function(){
+  // ============================================================
+  // KONFIGURASI - ganti URL ini kalau deployment /exec kamu beda
+  // ============================================================
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbWLIwV1TmhE39T_UFyHe_sxEhEjdqA6hcSV2sB1DWZbZyMwu8c4WlxnWvSo94jYFw/exec';
+
+  var STATUS = ["OK","NORMAL","WARNING","ALARM","FAULT","NOT OK","-"];
+  var LAMP = ["ON","OFF","-"];
+  var FANSTATUS = ["ON","OFF","-"];
+  var GOOD_SET = ["OK","NORMAL","ON","CLEAN","GOOD","-"];
+  var HIGH_WORDS = ["alarm","fault","not ok"];
+  var MED_WORDS = ["warning","off"];
+  var CONTROLLER_SUGGESTIONS = ["3500 BENTLY NEVADA","TRICONEX"];
+  var C4_SUGGESTIONS = ["WOOD WARD"];
+  var BASIC_FIELDS = [['breaker','Breaker'],['psu24vdc','PSU 24 VDC'],['switchHub','Switch Hub'],['fuseBoard','Fuse Board'],['resistorBoard','Resistor Board'],['barier','Barier']];
+
+  var CAB_DEFS = [
+    { key: 'cabInspection', label: 'General inspection of cabinets',
+      options: [['Good',null],['Fair','medium'],['Poor','high'],['-',null]] },
+    { key: 'cabDustFilters', label: 'Cabinets dust filters',
+      options: [['Clean',null],['Slightly dirty','medium'],['Dirty','medium'],['Needs replacement','high'],['-',null]] },
+    { key: 'cabDoorSwitches', label: 'Test door switches for lamps/lights',
+      options: [['Functioning',null],['Not functioning','high'],['-',null]] },
+    { key: 'cabFanFunction', label: 'Cabinets fan function',
+      options: [['Running',null],['Not running','high'],['-',null]] },
+    { key: 'cabCableRouting', label: 'Proper cable routing, dressing, sealings',
+      options: [['Proper',null],['Needs adjustment','medium'],['Not proper','high'],['-',null]] },
+    { key: 'cabDoorClosure', label: 'Cabinet door closure and locking mechanism',
+      options: [['Secure',null],['Loose','medium'],['Not secure','high'],['-',null]] }
+  ];
+  var CAB_FAN_RUNNING = { key: 'cabFanRunning', label: 'Fan running',
+    options: [['Running',null],['Not running','high'],['-',null]] };
+
+  var pwHome = document.getElementById('pwHome');
+  var pwForm = document.getElementById('pwForm');
+  var pwData = document.getElementById('pwData');
+  var pwBack = document.getElementById('pwBack');
+  var pwTabbar = document.getElementById('pwTabbar');
+  var pwTabHome = document.getElementById('pwTabHome');
+  var pwTabData = document.getElementById('pwTabData');
+  var pwTitle = document.getElementById('pwTitle');
+  var pwSub = document.getElementById('pwSub');
+  var pwFooter = document.getElementById('pwFooter');
+  var pwGrid = document.getElementById('pwGrid');
+  var pwSearch = document.getElementById('pwSearch');
+  var pwSubmit = document.getElementById('pwSubmit');
+  var pwReportBtn = document.getElementById('pwReportBtn');
+  var pwDataList = document.getElementById('pwDataList');
+  var pwDataSearch = document.getElementById('pwDataSearch');
+  var pwDataStatus = document.getElementById('pwDataStatus');
+  var pwDataYear = document.getElementById('pwDataYear');
+  var pwDataCount = document.getElementById('pwDataCount');
+  var pwDataFilterCount = document.getElementById('pwDataFilterCount');
+  var pwBanner = document.getElementById('pwBanner');
+  var pwBannerText = document.getElementById('pwBannerText');
+
+  var current = null;
+  var componentRegistry = [];
+  var currentCabDefs = [];
+  var editingRowIndex = null;
+  var cameFromData = false;
+  var bannerTimer = null;
+  var panelListCache = [];
+  var recordsCache = [];
+
+  function today(){ var d=new Date(); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  document.getElementById('pwDate').value = today();
+
+  // ---------- API helpers ----------
+  function apiGet(action, params){
+    var url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action);
+    if (params) Object.keys(params).forEach(function(k){ url += '&' + k + '=' + encodeURIComponent(params[k]); });
+    return fetch(url).then(function(r){ return r.json(); }).then(function(res){
+      if (!res.success) throw new Error(res.message || 'Gagal mengambil data.');
+      return res.data;
+    });
+  }
+  function apiPost(action, payload){
+    var body = Object.assign({ action: action }, payload);
+    return fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if (!res.success) throw new Error(res.message || 'Gagal menyimpan data.');
+      return res;
+    });
+  }
+
+  function showBanner(msg, isError){
+    pwBannerText.textContent = msg;
+    pwBanner.className = 'pmw-banner ' + (isError ? 'danger' : 'success');
+    pwBanner.style.display = 'flex';
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function(){ pwBanner.style.display = 'none'; }, isError ? 5000 : 2600);
+  }
+
+  // ---------- navigasi ----------
+  function setTab(tab){
+    pwTabHome.classList.toggle('active', tab === 'home');
+    pwTabData.classList.toggle('active', tab === 'data');
+  }
+  function goHome(){
+    pwForm.style.display = 'none'; pwData.style.display = 'none'; pwHome.style.display = 'block';
+    pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
+    pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Pilih panel untuk mulai input data';
+    current = null; editingRowIndex = null; cameFromData = false;
+    setTab('home');
+    loadPanelList();
+  }
+  function goData(){
+    pwForm.style.display = 'none'; pwHome.style.display = 'none'; pwData.style.display = 'block';
+    pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
+    pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Semua data PM yang sudah diinput';
+    current = null;
+    setTab('data');
+    loadRecords();
+  }
+  pwBack.addEventListener('click', function(){ cameFromData ? goData() : goHome(); });
+  pwTabHome.addEventListener('click', goHome);
+  pwTabData.addEventListener('click', goData);
+
+  // ---------- Home: daftar panel ----------
+  function loadPanelList(){
+    pwGrid.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat daftar panel...</div>';
+    apiGet('list').then(function(list){
+      panelListCache = list || [];
+      renderGrid(pwSearch.value);
+    }).catch(function(err){
+      pwGrid.innerHTML = '';
+      showBanner('Gagal memuat daftar panel: ' + err.message, true);
+    });
+  }
+  function renderGrid(filter){
+    pwGrid.innerHTML = '';
+    var list = panelListCache.filter(function(p){ return !filter || p.toLowerCase().indexOf(filter.toLowerCase()) > -1; });
+    if (!list.length) { pwGrid.innerHTML = '<div class="pmw-empty">Belum ada panel. Pakai tombol "Tambah panel baru" di bawah.</div>'; return; }
+    list.forEach(function(p){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'pmw-panelbtn';
+      b.innerHTML = '<i class="ti ti-server-2" aria-hidden="true"></i><span>' + p + '</span>';
+      b.addEventListener('click', function(){ openForm(p, null); });
+      pwGrid.appendChild(b);
+    });
+  }
+  pwSearch.addEventListener('input', function(){ renderGrid(pwSearch.value); });
+  document.getElementById('pwAddPanel').addEventListener('click', function(){
+    var code = window.prompt('Masukkan kode panel baru:');
+    if (code && code.trim()) openForm(code.trim(), null);
+  });
+
+  // ---------- helper builder form ----------
+  function field(label, inner){
+    var w = document.createElement('div'); w.className = 'pmw-field';
+    var l = document.createElement('label'); l.textContent = label; w.appendChild(l); w.appendChild(inner); return w;
+  }
+  function select(opts, def, id){
+    var s = document.createElement('select');
+    if (id) s.id = id;
+    opts.forEach(function(o){ var op = document.createElement('option'); op.value=o; op.textContent=o; if(o===def) op.selected=true; s.appendChild(op); });
+    return s;
+  }
+  function selectFromDefs(defs, id, prefillValue){
+    var s = document.createElement('select'); s.id = id;
+    defs.options.forEach(function(pair, idx){
+      var op = document.createElement('option'); op.value = pair[0]; op.textContent = pair[0];
+      var isDefault = prefillValue ? (pair[0] === prefillValue) : (idx === 0);
+      if (isDefault) op.selected = true;
+      s.appendChild(op);
+    });
+    return s;
+  }
+  function plainText(value, placeholder, id){
+    var input = document.createElement('input'); input.type='text';
+    if (id) input.id = id;
+    if (value) input.value = value;
+    if (placeholder) input.placeholder = placeholder;
+    return input;
+  }
+  function comboText(value, placeholder, id, options){
+    var wrap = document.createElement('div');
+    var input = document.createElement('input'); input.type = 'text'; input.id = id;
+    var listId = id + 'List';
+    input.setAttribute('list', listId);
+    if (value) input.value = value;
+    if (placeholder) input.placeholder = placeholder;
+    var dl = document.createElement('datalist'); dl.id = listId;
+    (options || []).forEach(function(o){ var op = document.createElement('option'); op.value = o; dl.appendChild(op); });
+    wrap.appendChild(input); wrap.appendChild(dl);
+    return wrap;
+  }
+  function card(title, sub, icon){
+    var c = document.createElement('div'); c.className = 'pmw-card';
+    var h = document.createElement('h2');
+    h.innerHTML = (icon ? '<i class="ti ' + icon + '" aria-hidden="true"></i>' : '') + title + (sub ? ' <span class="sub">'+sub+'</span>' : '');
+    c.appendChild(h); return c;
+  }
+  function row(cls){ var r = document.createElement('div'); r.className = 'pmw-row ' + (cls||''); return r; }
+  function tidakAdaBtn(ids){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'pmw-mini-btn'; b.textContent = 'Tidak ada';
+    b.addEventListener('click', function(){
+      ids.forEach(function(id){ var el = document.getElementById(id); if (el) el.value = '-'; });
+    });
+    return b;
+  }
+  function fieldRowWithBtn(fieldEl, btn){
+    var wrap = document.createElement('div'); wrap.className = 'pmw-field-row';
+    wrap.appendChild(fieldEl); wrap.appendChild(btn);
+    return wrap;
+  }
+
+  function isItccp(panel){
+    var u = panel.toUpperCase();
+    return u.indexOf('ITCCP') > -1 || u.indexOf('IMCCP') > -1;
+  }
+  function regStatus(id, label){ componentRegistry.push({ kind:'status', id: id, label: label }); }
+  function regPair(statusId, valueId, label, unit, suffix){
+    componentRegistry.push({ kind:'pair', statusId: statusId, valueId: valueId, label: label, unit: unit, suffix: suffix || '' });
+  }
+  function regFixedController(n, type, statusId){
+    componentRegistry.push({ kind:'fixedController', n: n, type: type, statusId: statusId, label: 'Controller C'+n+' ('+type+')' });
+  }
+  function findComp(prefillComponents, label){
+    if (!prefillComponents) return null;
+    return prefillComponents.filter(function(c){ return c.label === label; })[0] || null;
+  }
+
+  // ---------- render form (auto: panel ditemukan di histori / manual: panel baru) ----------
+  function openForm(panel, prefillRecord){
+    current = panel;
+    editingRowIndex = prefillRecord ? prefillRecord.rowIndex : null;
+    componentRegistry = [];
+    pwHome.style.display = 'none'; pwData.style.display = 'none'; pwForm.style.display = 'block';
+    pwFooter.style.display = 'flex'; pwBack.style.display = 'flex'; pwTabbar.style.display = 'none';
+    pwTitle.textContent = panel; pwSub.textContent = editingRowIndex ? 'Edit data tersimpan' : 'Memuat data panel...';
+    pwForm.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat...</div>';
+
+    if (prefillRecord) {
+      renderFormBody(panel, { found: true, fromRecord: true, prefill: prefillRecord.data });
+      return;
+    }
+    apiGet('template', { panel: panel }).then(function(tpl){
+      renderFormBody(panel, tpl);
+    }).catch(function(err){
+      showBanner('Gagal memuat template panel: ' + err.message, true);
+      renderFormBody(panel, { found: false });
+    });
+  }
+
+  function renderFormBody(panel, tpl){
+    pwSub.textContent = editingRowIndex ? 'Edit data tersimpan' : (tpl.found ? 'Isi status / nilai komponen' : 'Panel baru - isi semua komponen yang ada');
+    pwForm.innerHTML = '';
+    componentRegistry = [];
+
+    var prefill = tpl.fromRecord ? tpl.prefill : null;
+
+    var cInfo = card('Info panel', null, 'ti-info-circle'); var rInfo = row('c2');
+    var descVal = prefill ? prefill.desc : (tpl.desc || '');
+    var titleVal = prefill ? prefill.title : (tpl.reportTitle || '');
+    rInfo.appendChild(field('Deskripsi panel', plainText(descVal, 'cth: MMS CABINET FOR PROCESS AIR COMP', 'pwDesc')));
+    rInfo.appendChild(field('Judul laporan (untuk apa)', plainText(titleVal, 'cth: DCS Marshalling Cabinet for Ammonia', 'pwRptTitle')));
+    cInfo.appendChild(rInfo); pwForm.appendChild(cInfo);
+
+    if (tpl.found && !prefill) {
+      renderAutoSections(tpl);
+    } else if (prefill) {
+      renderAutoFromPrefill(panel, prefill);
+    } else {
+      renderManualSections();
+    }
+
+    currentCabDefs = CAB_DEFS.slice();
+    if (isItccp(panel)) currentCabDefs.push(CAB_FAN_RUNNING);
+    var cCab = card('Cabinet and accessories check', 'pilihan disesuaikan per item', 'ti-clipboard-check');
+    var rCab = row('c2');
+    currentCabDefs.forEach(function(defs){
+      var id = 'pw_' + defs.key;
+      var prefillVal = prefill ? prefill.cab[defs.key] : (tpl.cab ? tpl.cab[defs.key] : null);
+      rCab.appendChild(field(defs.label, selectFromDefs(defs, id, prefillVal)));
+    });
+    cCab.appendChild(rCab); pwForm.appendChild(cCab);
+
+    var c6 = card('Kondisi dan catatan', null, 'ti-notes'); var r6 = row();
+    var condVal = prefill ? prefill.condition : 'CLEAN';
+    r6.appendChild(field('Kondisi panel', select(['CLEAN','DIRTY','-'], condVal, 'pwCondition')));
+    var ta = document.createElement('textarea'); ta.placeholder = 'Tulis bebas, boleh bahasa Indonesia - otomatis diterjemahkan ke Inggris saat generate report'; ta.rows = 3; ta.id = 'pwNote';
+    ta.value = prefill ? (prefill.note || '') : '';
+    r6.appendChild(field('Catatan (NB)', ta));
+    var noteHint = document.createElement('div'); noteHint.className = 'pmw-note-hint';
+    noteHint.textContent = 'Contoh: "lampu belakang mati, baterai overspeed protection modul B lemah" -> otomatis jadi bahasa Inggris di report.';
+    r6.appendChild(noteHint);
+    c6.appendChild(r6); pwForm.appendChild(c6);
+
+    var reportBox = document.createElement('div'); reportBox.id = 'pwReportBox'; reportBox.style.display = 'none';
+    var c7 = card('Report', 'auto EN, kesimpulan di bawah', 'ti-file-text');
+    var rTa = document.createElement('textarea'); rTa.className = 'report'; rTa.id = 'pwReportOut'; rTa.readOnly = true;
+    c7.appendChild(rTa);
+    reportBox.appendChild(c7);
+    pwForm.appendChild(reportBox);
+
+    var hint = document.createElement('div'); hint.className = 'pmw-hint';
+    var hintIcon = editingRowIndex ? 'ti-edit' : (tpl.found ? 'ti-sparkles' : 'ti-alert-circle');
+    var hintText = editingRowIndex ? 'Mode edit - nilai di bawah adalah data yang sudah tersimpan.' :
+      (tpl.found ? 'Komponen otomatis dimuat dari histori. Tinggal isi nilai/status-nya.' :
+      'Panel baru, belum ada histori. Isi semua komponen yang benar-benar ada, pakai tombol "Tidak ada" untuk yang tidak ada.');
+    hint.innerHTML = '<i class="ti ' + hintIcon + '" aria-hidden="true"></i><span>' + hintText + '</span>';
+    pwForm.insertBefore(hint, pwForm.firstChild);
+
+    pwSubmit.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>' + (editingRowIndex ? 'Update data' : 'Simpan data');
+  }
+
+  function renderAutoSections(tpl){
+    var basic = BASIC_FIELDS.filter(function(k){ return tpl[k[0]]; });
+    if (basic.length){
+      var c1 = card('Modul dasar', null, 'ti-bolt'); var r1 = row('c3');
+      basic.forEach(function(k){
+        var id = 'pw_' + k[0];
+        r1.appendChild(field(k[1], select(STATUS, 'OK', id)));
+        regStatus(id, k[1]);
+      });
+      c1.appendChild(r1); pwForm.appendChild(c1);
+    }
+    ['c1','c2','c3'].forEach(function(k,i){
+      var comp = tpl[k];
+      if (!comp || !comp.exists) return;
+      var id = 'pw_' + k + 'Status';
+      var c = card('Controller C'+(i+1), comp.type, 'ti-cpu'); var r = row();
+      r.appendChild(field('Status', select(STATUS, 'OK', id)));
+      c.appendChild(r); pwForm.appendChild(c);
+      regFixedController(i+1, comp.type, id);
+    });
+    if (tpl.c4 && tpl.c4.exists){
+      var c4 = card('C4', tpl.c4.type, 'ti-gauge'); var r4 = row('c2');
+      ['ma','mb','mc'].forEach(function(sub){
+        var m = tpl['c4'+sub];
+        if (!m || !m.exists) return;
+        var letter = sub.slice(1).toUpperCase();
+        var valId = 'pw_c4'+sub+'Val', stId = 'pw_c4'+sub+'Status';
+        var lastVal = m.id !== '-' ? m.id : '';
+        r4.appendChild(field('Modul '+letter+' - nilai RPM', plainText(lastVal, 'cth: '+(lastVal || '5484'), valId)));
+        r4.appendChild(field('Modul '+letter+' - status', select(STATUS, 'OK', stId)));
+        regPair(stId, valId, 'Woodward Module '+letter, 'RPM');
+      });
+      c4.appendChild(r4); pwForm.appendChild(c4);
+    }
+    var lf = [];
+    if (tpl.lamp1){ var lid1='pw_lamp1'; lf.push(field('Lamp 1', select(LAMP,'ON', lid1))); regStatus(lid1,'Lamp 1'); }
+    if (tpl.lamp2){ var lid2='pw_lamp2'; lf.push(field('Lamp 2', select(LAMP,'ON', lid2))); regStatus(lid2,'Lamp 2'); }
+    if (tpl.fan1){
+      var f1s='pw_fan1Status', f1a='pw_fan1Amp';
+      lf.push(field('Fan 1 - status', select(FANSTATUS,'ON', f1s)));
+      lf.push(field('Fan 1 - nilai ampere', plainText(tpl.fan1Last !== '-' ? tpl.fan1Last : '', 'cth: 0,15', f1a)));
+      regPair(f1s, f1a, 'Fan 1', 'Ampere', ' A');
+    }
+    if (tpl.fan2){
+      var f2s='pw_fan2Status', f2a='pw_fan2Amp';
+      lf.push(field('Fan 2 - status', select(FANSTATUS,'ON', f2s)));
+      lf.push(field('Fan 2 - nilai ampere', plainText(tpl.fan2Last !== '-' ? tpl.fan2Last : '', 'cth: 0,15', f2a)));
+      regPair(f2s, f2a, 'Fan 2', 'Ampere', ' A');
+    }
+    if (lf.length){
+      var c5 = card('Lampu dan kipas', null, 'ti-bulb'); var r5 = row('c2');
+      lf.forEach(function(el){ r5.appendChild(el); }); c5.appendChild(r5); pwForm.appendChild(c5);
+    }
+  }
+
+  function renderAutoFromPrefill(panel, prefill){
+    var comps = prefill.components || [];
+    BASIC_FIELDS.forEach(function(k){
+      var comp = findComp(comps, k[1]);
+      if (!comp) return;
+      var id = 'pw_' + k[0];
+      var c1 = pwForm.querySelector('#pw-basic-card');
+      if (!c1) { c1 = card('Modul dasar', null, 'ti-bolt'); c1.id = 'pw-basic-card'; c1.appendChild(row('c3')); pwForm.appendChild(c1); }
+      c1.querySelector('.pmw-row').appendChild(field(k[1], select(STATUS, comp.value, id)));
+      regStatus(id, k[1]);
+    });
+    [1,2,3].forEach(function(n){
+      var prefix = 'Controller C' + n + ' (';
+      var comp = comps.filter(function(c){ return c.label.indexOf(prefix) === 0; })[0];
+      if (!comp) return;
+      var type = comp.label.slice(prefix.length, -1);
+      var id = 'pw_c' + n + 'Status';
+      var c = card('Controller C'+n, type, 'ti-cpu'); var r = row();
+      r.appendChild(field('Status', select(STATUS, comp.value, id)));
+      c.appendChild(r); pwForm.appendChild(c);
+      regFixedController(n, type, id);
+    });
+    var c4mods = ['A','B','C'].map(function(letter){ return { letter: letter, comp: findComp(comps, 'Woodward Module ' + letter) }; }).filter(function(x){ return x.comp; });
+    if (c4mods.length){
+      var c4 = card('C4', 'WOOD WARD', 'ti-gauge'); var r4 = row('c2');
+      c4mods.forEach(function(x){
+        var letter = x.letter, comp = x.comp;
+        var valId = 'pw_c4'+letter.toLowerCase()+'Val', stId = 'pw_c4'+letter.toLowerCase()+'Status';
+        r4.appendChild(field('Modul '+letter+' - nilai RPM', plainText(comp.reading, 'cth: '+comp.reading, valId)));
+        r4.appendChild(field('Modul '+letter+' - status', select(STATUS, comp.value, stId)));
+        regPair(stId, valId, 'Woodward Module '+letter, 'RPM');
+      });
+      c4.appendChild(r4); pwForm.appendChild(c4);
+    }
+    var lf = [];
+    var lamp1 = findComp(comps, 'Lamp 1'); if (lamp1) { var lid1='pw_lamp1'; lf.push(field('Lamp 1', select(LAMP, lamp1.value, lid1))); regStatus(lid1,'Lamp 1'); }
+    var lamp2 = findComp(comps, 'Lamp 2'); if (lamp2) { var lid2='pw_lamp2'; lf.push(field('Lamp 2', select(LAMP, lamp2.value, lid2))); regStatus(lid2,'Lamp 2'); }
+    var fan1 = findComp(comps, 'Fan 1');
+    if (fan1) {
+      var f1s='pw_fan1Status', f1a='pw_fan1Amp';
+      lf.push(field('Fan 1 - status', select(FANSTATUS, fan1.value, f1s)));
+      lf.push(field('Fan 1 - nilai ampere', plainText(fan1.reading, 'cth: 0,15', f1a)));
+      regPair(f1s, f1a, 'Fan 1', 'Ampere', ' A');
+    }
+    var fan2 = findComp(comps, 'Fan 2');
+    if (fan2) {
+      var f2s='pw_fan2Status', f2a='pw_fan2Amp';
+      lf.push(field('Fan 2 - status', select(FANSTATUS, fan2.value, f2s)));
+      lf.push(field('Fan 2 - nilai ampere', plainText(fan2.reading, 'cth: 0,15', f2a)));
+      regPair(f2s, f2a, 'Fan 2', 'Ampere', ' A');
+    }
+    if (lf.length){
+      var c5 = card('Lampu dan kipas', null, 'ti-bulb'); var r5 = row('c2');
+      lf.forEach(function(el){ r5.appendChild(el); }); c5.appendChild(r5); pwForm.appendChild(c5);
+    }
+  }
+
+  function renderManualSections(){
+    var c1 = card('Modul dasar', null, 'ti-bolt'); var r1 = row('c3');
+    BASIC_FIELDS.forEach(function(k){
+      var id = 'pw_' + k[0];
+      var f = field(k[1], select(STATUS, 'OK', id));
+      r1.appendChild(fieldRowWithBtn(f, tidakAdaBtn([id])));
+      regStatus(id, k[1]);
+    });
+    c1.appendChild(r1); pwForm.appendChild(c1);
+
+    [1,2,3].forEach(function(n){
+      var typeId = 'pw_c'+n, statusId = 'pw_c'+n+'Status';
+      var c = card('Controller C'+n, 'isi kalau ada', 'ti-cpu'); var r = row('c2');
+      r.appendChild(field('Tipe/merk', comboText('', 'cth: 3500 BENTLY NEVADA', typeId, CONTROLLER_SUGGESTIONS)));
+      r.appendChild(fieldRowWithBtn(field('Status', select(STATUS, 'OK', statusId)), tidakAdaBtn([typeId, statusId])));
+      c.appendChild(r); pwForm.appendChild(c);
+      // simpan sebagai component khusus (type + status terpisah, tapi field-nya bukan f_c{n}Status label generik)
+      componentRegistry.push({ kind:'controller', typeId: typeId, statusId: statusId, n: n });
+    });
+
+    var c4 = card('C4 (Wood Ward)', 'isi kalau ada', 'ti-gauge'); var r4t = row();
+    r4t.appendChild(field('Tipe modul', comboText('', 'cth: WOOD WARD', 'pw_c4', C4_SUGGESTIONS)));
+    c4.appendChild(r4t);
+    var r4 = row('c2');
+    ['ma','mb','mc'].forEach(function(sub, idx){
+      var letter = ['A','B','C'][idx];
+      var valId = 'pw_c4'+sub+'Val', stId = 'pw_c4'+sub+'Status';
+      r4.appendChild(field('Modul '+letter+' - nilai RPM', plainText('', 'cth: 5484', valId)));
+      r4.appendChild(fieldRowWithBtn(field('Modul '+letter+' - status', select(STATUS, '-', stId)), tidakAdaBtn([valId, stId])));
+      regPair(stId, valId, 'Woodward Module '+letter, 'RPM');
+    });
+    c4.appendChild(r4); pwForm.appendChild(c4);
+
+    var c5 = card('Lampu dan kipas', null, 'ti-bulb'); var r5 = row('c2');
+    var lid1='pw_lamp1', lid2='pw_lamp2';
+    r5.appendChild(field('Lamp 1', select(LAMP, 'ON', lid1))); regStatus(lid1,'Lamp 1');
+    r5.appendChild(field('Lamp 2', select(LAMP, 'ON', lid2))); regStatus(lid2,'Lamp 2');
+    var f1s='pw_fan1Status', f1a='pw_fan1Amp';
+    r5.appendChild(field('Fan 1 - status', select(FANSTATUS,'ON', f1s)));
+    r5.appendChild(field('Fan 1 - nilai ampere', plainText('', 'cth: 0,15', f1a)));
+    regPair(f1s, f1a, 'Fan 1', 'Ampere', ' A');
+    var f2s='pw_fan2Status', f2a='pw_fan2Amp';
+    r5.appendChild(field('Fan 2 - status', select(FANSTATUS,'ON', f2s)));
+    r5.appendChild(field('Fan 2 - nilai ampere', plainText('', 'cth: 0,15', f2a)));
+    regPair(f2s, f2a, 'Fan 2', 'Ampere', ' A');
+    c5.appendChild(r5); pwForm.appendChild(c5);
+  }
+
+  // ---------- status/severity/translate ----------
+  function statusWord(v){
+    var s = (v || '').toString().trim().toUpperCase();
+    if (s === '' || s === '-') return null;
+    var map = { 'OK':'ok','NORMAL':'normal','WARNING':'warning','ALARM':'alarm','FAULT':'fault','NOT OK':'not ok','ON':'on','OFF':'off' };
+    return map[s] || s.toLowerCase();
+  }
+  function isGood(v){
+    var s = (v||'').toString().trim().toUpperCase();
+    return GOOD_SET.indexOf(s) > -1;
+  }
+  function severityOfComponent(word){
+    if (!word) return null;
+    if (HIGH_WORDS.indexOf(word) > -1) return 'high';
+    if (MED_WORDS.indexOf(word) > -1) return 'medium';
+    return null;
+  }
+  function cabResolve(defs, rawValue){
+    var found = defs.options.filter(function(o){ return o[0] === rawValue; })[0];
+    if (!found) return null;
+    if (found[0] === '-') return null;
+    return { word: found[0].toLowerCase(), severity: found[1] };
+  }
+
+  var DICT = [
+    ["tidak berfungsi","not functioning"],["tidak ada masalah","no issues found"],
+    ["ada masalah","there is a problem"],["baterai internal","internal battery"],
+    ["baterai lemah","battery is low"],["perlu diganti","needs replacement"],
+    ["perlu penggantian","needs replacement"],["sudah diganti","already replaced"],
+    ["kondisi baik","in good condition"],["kondisi kurang baik","in poor condition"],
+    ["lampu belakang mati","rear lamp is off"],["lampu belakang","rear lamp"],
+    ["lampu depan","front lamp"],["lampu mati","lamp off"],["kipas mati","fan off"],
+    ["kipas berisik","fan is noisy"],["agak kotor","slightly dirty"],["sangat kotor","very dirty"],
+    ["rusak ringan","minor damage"],["tidak ada","not present"],["rusak","damaged"],
+    ["mati","off"],["hidup","on"],["kotor","dirty"],["bersih","clean"],["longgar","loose"],
+    ["kendor","loose"],["berisik","noisy"],["bocor","leaking"],["panas","hot"],
+    ["normal","normal"],["baik","good"],["lemah","weak"],["cek","check"],["ganti","replace"],
+    ["perlu","needs"],["dan","and"],["atau","or"],["pada","on"],["sudah","already"],
+    ["belum","not yet"],["dari","from"],["modul","module"],["kabel","cable"],["saklar","switch"],
+    ["perlu dicek","needs to be checked"],["dicek","checked"]
+  ];
+  function looksIndonesian(text){
+    var lower = text.toLowerCase();
+    return DICT.some(function(pair){ return lower.indexOf(pair[0]) > -1; });
+  }
+  function pseudoTranslate(text){
+    if (!text) return '';
+    if (!looksIndonesian(text)) return text;
+    var out = text.toLowerCase();
+    DICT.slice().sort(function(a,b){ return b[0].length - a[0].length; }).forEach(function(pair){
+      out = out.split(pair[0]).join(pair[1]);
+    });
+    return out.charAt(0).toUpperCase() + out.slice(1);
+  }
+
+  // ---------- kumpulkan data form ----------
+  function collectFormData(){
+    var desc = (document.getElementById('pwDesc').value || '').trim() || '-';
+    var title = (document.getElementById('pwRptTitle').value || '').trim() || '-';
+    var out = { date: document.getElementById('pwDate') ? document.getElementById('pwDate').value : today(),
+      panel: current, desc: desc, reportTitle: title };
+    var cab = {};
+    currentCabDefs.forEach(function(defs){
+      var el = document.getElementById('pw_' + defs.key);
+      cab[defs.key] = el ? el.value : defs.options[0][0];
+      out[defs.key] = cab[defs.key];
+    });
+    var reportComponents = [];
+    componentRegistry.forEach(function(c){
+      if (c.kind === 'pair') {
+        var stEl = document.getElementById(c.statusId);
+        var valEl = document.getElementById(c.valueId);
+        var value = stEl ? stEl.value : '', reading = valEl ? valEl.value.trim() : '';
+        reportComponents.push({ kind:'pair', label: c.label, unit: c.unit, suffix: c.suffix, value: value, reading: reading });
+        if (c.label === 'Fan 1') { out.fan1Status = value; out.fan1Ampere = reading; }
+        else if (c.label === 'Fan 2') { out.fan2Status = value; out.fan2Ampere = reading; }
+        else if (c.label.indexOf('Woodward Module A') === 0) { out.c4ma = reading; out.c4maStatus = value; if (isPresentVal_(value) || isPresentVal_(reading)) out.c4 = out.c4 || 'WOOD WARD'; }
+        else if (c.label.indexOf('Woodward Module B') === 0) { out.c4mb = reading; out.c4mbStatus = value; if (isPresentVal_(value) || isPresentVal_(reading)) out.c4 = out.c4 || 'WOOD WARD'; }
+        else if (c.label.indexOf('Woodward Module C') === 0) { out.c4mc = reading; out.c4mcStatus = value; if (isPresentVal_(value) || isPresentVal_(reading)) out.c4 = out.c4 || 'WOOD WARD'; }
+      } else if (c.kind === 'controller') {
+        var typeEl = document.getElementById(c.typeId), stEl2 = document.getElementById(c.statusId);
+        var type = typeEl ? typeEl.value.trim() : '', status = stEl2 ? stEl2.value : '';
+        out['c'+c.n] = type || '-';
+        out['c'+c.n+'Status'] = type ? status : '-';
+        if (type) reportComponents.push({ kind:'status', label: 'Controller C'+c.n+' ('+type+')', value: status });
+      } else if (c.kind === 'fixedController') {
+        var stEl3 = document.getElementById(c.statusId);
+        var status3 = stEl3 ? stEl3.value : '';
+        out['c'+c.n] = c.type;
+        out['c'+c.n+'Status'] = status3;
+        reportComponents.push({ kind:'status', label: c.label, value: status3 });
+      } else {
+        var el = document.getElementById(c.id);
+        var value2 = el ? el.value : '';
+        reportComponents.push({ kind:'status', label: c.label, value: value2 });
+        var keyMap = { 'Breaker':'breaker', 'PSU 24 VDC':'psu24vdc', 'Switch Hub':'switchHub', 'Fuse Board':'fuseBoard', 'Resistor Board':'resistorBoard', 'Barier':'barier', 'Lamp 1':'lamp1', 'Lamp 2':'lamp2' };
+        if (keyMap[c.label]) out[keyMap[c.label]] = value2;
+      }
+    });
+    // C4 tipe: kalau mode manual ada input teks pw_c4, itu yang menang (override).
+    // Kalau kosong tapi salah satu modul Woodward terisi, fallback ke 'WOOD WARD'.
+    var c4TypeEl = document.getElementById('pw_c4');
+    if (c4TypeEl) {
+      var typed = c4TypeEl.value.trim();
+      out.c4 = typed || out.c4 || '-';
+    }
+
+    out.panelCondition = document.getElementById('pwCondition').value;
+    out.note = document.getElementById('pwNote').value || '';
+
+    return { flat: out, reportData: { desc: desc, title: title, cab: cab, components: reportComponents, condition: out.panelCondition, note: out.note } };
+  }
+  function isPresentVal_(v){
+    var s = (v || '').toString().trim();
+    return s !== '' && s !== '-';
+  }
+
+  // ---------- findings / report text (dipakai form aktif MAUPUN Data screen) ----------
+  function findingsFor(panel, data){
+    var findings = [];
+    var cabDefsForPanel = CAB_DEFS.slice();
+    if (isItccp(panel)) cabDefsForPanel.push(CAB_FAN_RUNNING);
+    cabDefsForPanel.forEach(function(defs){
+      var raw = (data.cab && data.cab[defs.key]) || defs.options[0][0];
+      var resolved = cabResolve(defs, raw);
+      if (resolved && resolved.severity) findings.push({ label: defs.label, word: resolved.word, severity: resolved.severity });
+    });
+    (data.components || []).forEach(function(c){
+      var word = statusWord(c.value);
+      if (!word) return;
+      var sev = severityOfComponent(word);
+      if (sev) findings.push({ label: c.label, word: word, severity: sev });
+    });
+    return findings;
+  }
+
+  function buildReportText(panel, data){
+    var checklistLines = [];
+    var cabDefsForPanel = CAB_DEFS.slice();
+    if (isItccp(panel)) cabDefsForPanel.push(CAB_FAN_RUNNING);
+    cabDefsForPanel.forEach(function(defs){
+      var raw = (data.cab && data.cab[defs.key]) || defs.options[0][0];
+      var resolved = cabResolve(defs, raw);
+      if (!resolved) return;
+      checklistLines.push('\t\t> ' + defs.label + ' (' + resolved.word + ')');
+    });
+    (data.components || []).forEach(function(c){
+      var word = statusWord(c.value);
+      if (!word) return;
+      var line = '\t\t> ' + c.label + ' (' + word + ')';
+      if (c.kind === 'pair' && c.reading && c.reading !== '-') line += ', ' + c.unit + ': ' + c.reading + (c.suffix || '');
+      checklistLines.push(line);
+    });
+
+    var findings = findingsFor(panel, data);
+    var highCount = findings.filter(function(f){ return f.severity === 'high'; }).length;
+    var medCount = findings.filter(function(f){ return f.severity === 'medium'; }).length;
+
+    var summaryText;
+    if (findings.length === 0) {
+      summaryText = 'Overall condition: GOOD - no issues found.';
+    } else {
+      var parts = [];
+      if (highCount) parts.push(highCount + (highCount > 1 ? ' critical items' : ' critical item'));
+      if (medCount) parts.push(medCount + (medCount > 1 ? ' minor items' : ' minor item'));
+      summaryText = 'Overall condition: NEEDS ATTENTION - ' + parts.join(' and ') + ' flagged (see NB below).';
+    }
+
+    var recommendationText;
+    if (highCount > 0) {
+      var highLabels = findings.filter(function(f){ return f.severity === 'high'; }).map(function(f){ return f.label; }).join('; ');
+      recommendationText = 'Recommendation: Immediate follow-up required for ' + highLabels + '.';
+    } else if (medCount > 0) {
+      var medLabels = findings.filter(function(f){ return f.severity === 'medium'; }).map(function(f){ return f.label; }).join('; ');
+      recommendationText = 'Recommendation: Schedule monitoring/maintenance for ' + medLabels + ' on next visit.';
+    } else {
+      recommendationText = 'Recommendation: No action required, panel in good condition.';
+    }
+
+    var noteLines = (data.note || '').split('\n').map(function(s){ return s.trim(); }).filter(Boolean)
+      .map(function(s){ return pseudoTranslate(s); });
+    var nbLines = findings.map(function(f){ return f.label + ' - ' + f.word; }).concat(noteLines);
+
+    var lines = [];
+    lines.push(panel + '\t' + (data.desc || '-') + '\tPM Cabinet And Accessories Check ' + (data.title || '-'));
+    lines = lines.concat(checklistLines);
+    lines.push('');
+    lines.push('\t\t' + summaryText);
+    if (nbLines.length) {
+      lines.push('\t\tNB : ');
+      nbLines.forEach(function(n){ lines.push('\t\t- ' + n); });
+    }
+    lines.push('\t\t' + recommendationText);
+    return lines.join('\n');
+  }
+
+  function badgeInfo(panel, data){
+    var findings = findingsFor(panel, data);
+    var highCount = findings.filter(function(f){ return f.severity === 'high'; }).length;
+    var medCount = findings.filter(function(f){ return f.severity === 'medium'; }).length;
+    if (highCount > 0) return { cls: 'high', text: 'NEEDS ATTENTION', icon: 'ti-alert-triangle' };
+    if (medCount > 0) return { cls: 'medium', text: 'MINOR ISSUE', icon: 'ti-alert-circle' };
+    return { cls: 'good', text: 'GOOD', icon: 'ti-circle-check' };
+  }
+
+  // ---------- Data Tersimpan ----------
+  function loadRecords(){
+    pwDataList.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat data...</div>';
+    apiGet('records').then(function(records){
+      recordsCache = records || [];
+      populateYearFilter();
+      renderDataList();
+    }).catch(function(err){
+      pwDataList.innerHTML = '';
+      showBanner('Gagal memuat data: ' + err.message, true);
+    });
+  }
+  function populateYearFilter(){
+    var years = Array.from(new Set(recordsCache.map(function(r){ return (r.date||'').slice(0,4); }).filter(Boolean))).sort().reverse();
+    var keep = pwDataYear.value;
+    pwDataYear.innerHTML = '';
+    var allOpt = document.createElement('option'); allOpt.value = ''; allOpt.textContent = 'Semua tahun'; pwDataYear.appendChild(allOpt);
+    years.forEach(function(y){ var op = document.createElement('option'); op.value = y; op.textContent = y; pwDataYear.appendChild(op); });
+    if (years.indexOf(keep) > -1) pwDataYear.value = keep;
+  }
+  pwDataSearch.addEventListener('input', renderDataList);
+  pwDataStatus.addEventListener('change', renderDataList);
+  pwDataYear.addEventListener('change', renderDataList);
+
+  function renderDataList(){
+    var panelFilter = pwDataSearch.value.trim().toLowerCase();
+    var statusFilter = pwDataStatus.value;
+    var yearFilter = pwDataYear.value;
+
+    var items = recordsCache.filter(function(r){
+      if (panelFilter && r.panel.toLowerCase().indexOf(panelFilter) === -1) return false;
+      if (yearFilter && (r.date||'').slice(0,4) !== yearFilter) return false;
+      if (statusFilter) {
+        var b = badgeInfo(r.panel, r.data);
+        if (b.cls !== statusFilter) return false;
+      }
+      return true;
+    }).slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+
+    pwDataCount.textContent = '(' + recordsCache.length + ' entri total)';
+    pwDataFilterCount.textContent = (panelFilter || statusFilter || yearFilter)
+      ? 'Menampilkan ' + items.length + ' dari ' + recordsCache.length + ' entri sesuai filter.'
+      : '';
+    pwDataList.innerHTML = '';
+    if (!items.length) {
+      var e = document.createElement('div'); e.className = 'pmw-empty';
+      e.innerHTML = '<i class="ti ti-inbox" aria-hidden="true"></i>Tidak ada data yang cocok dengan filter.';
+      pwDataList.appendChild(e); return;
+    }
+    items.forEach(function(rec){
+      var b = badgeInfo(rec.panel, rec.data);
+      var wrap = document.createElement('div'); wrap.className = 'pmw-datarow';
+      var top = document.createElement('div'); top.className = 'pmw-datarow-top';
+      var left = document.createElement('div');
+      left.innerHTML = '<div class="panel"><i class="ti ti-server-2" aria-hidden="true"></i>' + rec.panel + '</div><div class="date">' + rec.date + '</div>';
+      var pill = document.createElement('span'); pill.className = 'pmw-statuspill ' + b.cls;
+      pill.innerHTML = '<i class="ti ' + b.icon + '" aria-hidden="true"></i>' + b.text;
+      top.appendChild(left); top.appendChild(pill);
+      wrap.appendChild(top);
+      var actions = document.createElement('div'); actions.className = 'pmw-datarow-actions';
+      var btnReport = document.createElement('button'); btnReport.type='button'; btnReport.className='pmw-mini-btn';
+      btnReport.innerHTML = '<i class="ti ti-file-text" aria-hidden="true"></i>Lihat report';
+      btnReport.addEventListener('click', function(){
+        var existing = wrap.querySelector('.pmw-inline-report');
+        if (existing) { existing.remove(); return; }
+        var box = document.createElement('div'); box.className = 'pmw-inline-report';
+        var ta = document.createElement('textarea'); ta.className = 'report'; ta.readOnly = true; ta.value = buildReportText(rec.panel, rec.data);
+        box.appendChild(ta);
+        wrap.appendChild(box);
+      });
+      var btnEdit = document.createElement('button'); btnEdit.type='button'; btnEdit.className='pmw-mini-btn';
+      btnEdit.innerHTML = '<i class="ti ti-edit" aria-hidden="true"></i>Edit';
+      btnEdit.addEventListener('click', function(){ cameFromData = true; openForm(rec.panel, rec); });
+      var btnDel = document.createElement('button'); btnDel.type='button'; btnDel.className='pmw-mini-btn danger';
+      btnDel.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>Hapus';
+      btnDel.addEventListener('click', function(){
+        if (!window.confirm('Hapus data ' + rec.panel + ' (' + rec.date + ')? Baris di spreadsheet akan ikut terhapus.')) return;
+        apiPost('delete', { rowIndex: rec.rowIndex }).then(function(){
+          showBanner('Data ' + rec.panel + ' dihapus.');
+          loadRecords();
+        }).catch(function(err){ showBanner('Gagal menghapus: ' + err.message, true); });
+      });
+      actions.appendChild(btnReport); actions.appendChild(btnEdit); actions.appendChild(btnDel);
+      wrap.appendChild(actions);
+      pwDataList.appendChild(wrap);
+    });
+  }
+
+  // ---------- generate report (form aktif) ----------
+  pwReportBtn.addEventListener('click', function(){
+    if (!current) return;
+    var collected = collectFormData();
+    var text = buildReportText(current, collected.reportData);
+    document.getElementById('pwReportOut').value = text;
+    document.getElementById('pwReportBox').style.display = 'block';
+    document.getElementById('pwReportOut').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  // ---------- simpan / update ----------
+  pwSubmit.addEventListener('click', function(){
+    if (!current) return;
+    var collected = collectFormData();
+    pwSubmit.disabled = true;
+    var origLabel = pwSubmit.innerHTML;
+    pwSubmit.innerHTML = '<span class="pmw-spinner" aria-hidden="true"></span> Menyimpan...';
+    var req = editingRowIndex
+      ? apiPost('update', { rowIndex: editingRowIndex, data: collected.flat })
+      : apiPost('submit', { data: collected.flat });
+    req.then(function(res){
+      showBanner(res.message || 'Data tersimpan.');
+      setTimeout(function(){ cameFromData || editingRowIndex ? goData() : goHome(); }, 500);
+    }).catch(function(err){
+      showBanner('Gagal menyimpan: ' + err.message, true);
+      pwSubmit.disabled = false;
+      pwSubmit.innerHTML = origLabel;
+    });
+  });
+
+  // ---------- PWA: registrasi service worker ----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/sw.js').catch(function(){ /* diamkan kalau gagal, app tetap jalan tanpa PWA */ });
+    });
+  }
+
+  goHome();
+})();
+</script>
+</body>
+</html>
