@@ -5,7 +5,7 @@
 // ditampilkan selalu yang terbaru.
 
 // Naikkan versi ini setiap kali app shell berubah supaya cache lama dibuang.
-var CACHE_NAME = 'pm-control-panel-shell-v6';
+var CACHE_NAME = 'pm-control-panel-shell-v7';
 var SHELL_FILES = [
   '/',
   '/index.html',
