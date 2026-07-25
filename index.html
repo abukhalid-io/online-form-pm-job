@@ -29,6 +29,8 @@
     --bg-danger: #fce8e6; --text-danger: #c5221f; --border-danger: #c5221f;
     --radius: 8px; --font-mono: 'SFMono-Regular', Consolas, monospace;
     --page-max: 480px;
+    --header-from: #1a73e8; --header-to: #1558b0; --on-header: #ffffff;
+    --grid-line: rgba(26,115,232,.075); --grid-line-strong: rgba(26,115,232,.14);
   }
   /* Dark mode hanya aktif kalau dipilih manual lewat tombol tema. Sengaja TIDAK
      memakai prefers-color-scheme, supaya tampilan awal selalu terang walaupun
@@ -41,6 +43,8 @@
     --bg-success:#123021; --text-success:#5fd88a;
     --bg-warning:#3a2c05; --text-warning:#f2b93d;
     --bg-danger:#3a1210; --text-danger:#ff8a80; --border-danger:#ff8a80;
+    --header-from:#1e3a63; --header-to:#14263f; --on-header:#eaf1ff;
+    --grid-line: rgba(127,176,255,.07); --grid-line-strong: rgba(127,176,255,.13);
   }
   /* Lebar container naik bertahap. Satu variabel dipakai bersama oleh .page dan
      .pmw-footer supaya footer (position:fixed) tetap sejajar dengan konten. */
@@ -48,17 +52,33 @@
   @media (min-width: 1024px) { :root { --page-max: 980px; } }
   @media (min-width: 1280px) { :root { --page-max: 1140px; } }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--surface-0); color: var(--text-primary);
+  html, body { margin: 0; padding: 0; color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  /* Kertas milimeter: kotak halus tiap 24px, garis lebih tegas tiap 120px.
+     Digambar di body supaya ikut menutupi seluruh kanvas viewport. */
+  body {
+    background-color: var(--surface-0);
+    background-image:
+      linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px),
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  }
   input, select, textarea, button { font-family: inherit; }
-  .page { max-width: var(--page-max); margin: 0 auto; min-height: 100vh; background: var(--surface-1); }
-  .pmw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); }
+  /* Transparan supaya grid ikut terlihat di area konten. Header, tabbar, footer,
+     dan kartu punya latar solid sendiri sehingga teks tetap terbaca. */
+  .page { max-width: var(--page-max); margin: 0 auto; min-height: 100vh; background: transparent; }
+  .pmw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, var(--header-from), var(--header-to)); color: var(--on-header); }
   .pmw-iconbtn { width: 32px; height: 32px; flex-shrink: 0; display: none; align-items: center; justify-content: center; border-radius: var(--radius); background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; }
   .pmw-iconbtn:hover { background: var(--surface-0); }
   .pmw-iconbtn.theme { display: flex; margin-left: auto; }
+  .pmw-header .pmw-iconbtn { color: var(--on-header); }
+  .pmw-header .pmw-iconbtn:hover { background: rgba(255,255,255,.16); }
   .pmw-header h1 { margin: 0; font-size: 18px; font-weight: 500; }
-  .pmw-header p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); }
-  .pmw-tabbar { display: flex; border-bottom: 0.5px solid var(--border); }
+  .pmw-header p { margin: 2px 0 0; font-size: 13px; color: rgba(255,255,255,.8); }
+  .pmw-tabbar { display: flex; border-bottom: 0.5px solid var(--border); background: var(--surface-1); }
   .pmw-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -0.5px; }
   .pmw-tab.active { color: var(--text-accent); border-bottom-color: var(--border-accent); }
   .pmw-main { padding: 12px; padding-bottom: 90px; }
@@ -128,7 +148,7 @@
     .pmw-footer .info { flex: 1 1 auto; }
   }
   @media (min-width: 1024px) {
-    .page, .pmw-footer { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
+    .pmw-footer { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
     .pmw-main { padding: 20px; padding-bottom: 96px; }
     .pmw-card { padding: 1.15rem 1.35rem 0.85rem; }
     textarea.report { min-height: 340px; font-size: 12.5px; }
@@ -261,7 +281,7 @@
     var icon = pwTheme.querySelector('i');
     if (icon) icon.className = 'ti ' + (mode === 'dark' ? 'ti-sun' : 'ti-moon');
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', mode === 'dark' ? '#1c1e22' : '#1a73e8');
+    if (meta) meta.setAttribute('content', mode === 'dark' ? '#1e3a63' : '#1a73e8');
   }
   applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
   pwTheme.addEventListener('click', function(){
