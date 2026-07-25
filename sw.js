@@ -4,7 +4,8 @@
 // diambil langsung dari network, tidak pernah di-cache, supaya data yang
 // ditampilkan selalu yang terbaru.
 
-var CACHE_NAME = 'pm-control-panel-shell-v1';
+// Naikkan versi ini setiap kali app shell berubah supaya cache lama dibuang.
+var CACHE_NAME = 'pm-control-panel-shell-v2';
 var SHELL_FILES = [
   '/',
   '/index.html',
@@ -36,6 +37,12 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+function isHtmlRequest_(request) {
+  return request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    (request.headers.get('accept') || '').indexOf('text/html') > -1;
+}
+
 self.addEventListener('fetch', function (event) {
   var url = event.request.url;
 
@@ -45,7 +52,25 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // App shell: cache-first, fallback ke network kalau belum ke-cache.
+  // HTML: network-first. index.html memuat konfigurasi (URL Apps Script), jadi
+  // versi cache tidak boleh menang - kalau menang, konfigurasi usang terkunci
+  // permanen dan app gagal fetch data meski server sudah diperbarui.
+  if (isHtmlRequest_(event.request)) {
+    event.respondWith(
+      fetch(event.request).then(function (response) {
+        var copy = response.clone();
+        caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
+        return response;
+      }).catch(function () {
+        return caches.match(event.request).then(function (cached) {
+          return cached || caches.match('/index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Aset statis (ikon, manifest): cache-first, aman karena isinya jarang berubah.
   event.respondWith(
     caches.match(event.request).then(function (cached) {
       return cached || fetch(event.request).then(function (response) {
@@ -53,8 +78,6 @@ self.addEventListener('fetch', function (event) {
         caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
         return response;
       });
-    }).catch(function () {
-      return caches.match('/index.html');
     })
   );
 });
