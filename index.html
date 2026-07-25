@@ -30,7 +30,12 @@
     --radius: 8px; --font-mono: 'SFMono-Regular', Consolas, monospace;
     --page-max: 480px;
     --header-from: #1a73e8; --header-to: #1558b0; --on-header: #ffffff;
+    --header-shadow: rgba(21,88,176,.26);
     --grid-line: rgba(26,115,232,.075); --grid-line-strong: rgba(26,115,232,.14);
+    --gutter: 12px;
+    --fam-ctrl-bg: #e8f0fe; --fam-ctrl-fg: #14508f; --fam-ctrl-line: #c3d9f8;
+    --fam-mms-bg:  #e2f4ef; --fam-mms-fg:  #0f6552; --fam-mms-line:  #b5e2d5;
+    --fam-etc-bg:  #f3edfd; --fam-etc-fg:  #5b3ba8; --fam-etc-line:  #ddd0f7;
   }
   /* Dark mode hanya aktif kalau dipilih manual lewat tombol tema. Sengaja TIDAK
      memakai prefers-color-scheme, supaya tampilan awal selalu terang walaupun
@@ -44,13 +49,17 @@
     --bg-warning:#3a2c05; --text-warning:#f2b93d;
     --bg-danger:#3a1210; --text-danger:#ff8a80; --border-danger:#ff8a80;
     --header-from:#1e3a63; --header-to:#14263f; --on-header:#eaf1ff;
+    --header-shadow: rgba(0,0,0,.45);
     --grid-line: rgba(127,176,255,.07); --grid-line-strong: rgba(127,176,255,.13);
+    --fam-ctrl-bg: #122744; --fam-ctrl-fg: #9cc4ff; --fam-ctrl-line: #1e3c66;
+    --fam-mms-bg:  #0e2c25; --fam-mms-fg:  #7ed9be; --fam-mms-line:  #1b4a3c;
+    --fam-etc-bg:  #241a3d; --fam-etc-fg:  #c3aef5; --fam-etc-line:  #3a2c5e;
   }
   /* Lebar container naik bertahap. Satu variabel dipakai bersama oleh .page dan
      .pmw-footer supaya footer (position:fixed) tetap sejajar dengan konten. */
-  @media (min-width: 640px)  { :root { --page-max: 720px; } }
-  @media (min-width: 1024px) { :root { --page-max: 980px; } }
-  @media (min-width: 1280px) { :root { --page-max: 1140px; } }
+  @media (min-width: 640px)  { :root { --page-max: 720px;  --gutter: 16px; } }
+  @media (min-width: 1024px) { :root { --page-max: 980px;  --gutter: 20px; } }
+  @media (min-width: 1280px) { :root { --page-max: 1140px; --gutter: 20px; } }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -69,8 +78,13 @@
   /* Transparan supaya grid ikut terlihat di area konten. Header, tabbar, footer,
      dan kartu punya latar solid sendiri sehingga teks tetap terbaca. */
   .page { max-width: var(--page-max); margin: 0 auto; min-height: 100vh; background: transparent; }
-  .pmw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px;
-    background: linear-gradient(135deg, var(--header-from), var(--header-to)); color: var(--on-header); }
+  /* Kartu membulat yang mengambang di atas grid, bukan bilah persegi penuh lebar. */
+  .pmw-header { margin: var(--gutter) var(--gutter) 0; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--header-from), var(--header-to));
+    color: var(--on-header); box-shadow: 0 8px 20px var(--header-shadow); }
+  .pmw-brand { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; border-radius: 12px; background: rgba(255,255,255,.18); font-size: 20px; }
   .pmw-iconbtn { width: 32px; height: 32px; flex-shrink: 0; display: none; align-items: center; justify-content: center; border-radius: var(--radius); background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; }
   .pmw-iconbtn:hover { background: var(--surface-0); }
   .pmw-iconbtn.theme { display: flex; margin-left: auto; }
@@ -78,10 +92,12 @@
   .pmw-header .pmw-iconbtn:hover { background: rgba(255,255,255,.16); }
   .pmw-header h1 { margin: 0; font-size: 18px; font-weight: 500; }
   .pmw-header p { margin: 2px 0 0; font-size: 13px; color: rgba(255,255,255,.8); }
-  .pmw-tabbar { display: flex; border-bottom: 0.5px solid var(--border); background: var(--surface-1); }
-  .pmw-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -0.5px; }
-  .pmw-tab.active { color: var(--text-accent); border-bottom-color: var(--border-accent); }
-  .pmw-main { padding: 12px; padding-bottom: 90px; }
+  /* Segmented control agar senada dengan header berbentuk kartu. */
+  .pmw-tabbar { display: flex; gap: 6px; margin: var(--gutter) var(--gutter) 0; padding: 4px;
+    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; }
+  .pmw-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-radius: 9px; cursor: pointer; }
+  .pmw-tab.active { color: var(--text-accent); background: var(--bg-accent); }
+  .pmw-main { padding: var(--gutter); padding-bottom: 96px; }
   .pmw-banner { display: none; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; padding: 10px 12px; border-radius: var(--radius); margin-bottom: 12px; }
   .pmw-banner.success { background: var(--bg-success); color: var(--text-success); }
   .pmw-banner.danger { background: var(--bg-danger); color: var(--text-danger); }
@@ -106,9 +122,19 @@
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-accent); box-shadow: 0 0 0 2px var(--bg-accent); }
   textarea.report { font-family: var(--font-mono); font-size: 11.5px; min-height: 260px; white-space: pre; width: 100%; }
   .pmw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .pmw-panelbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 8px; font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
-  .pmw-panelbtn i { font-size: 20px; color: var(--text-accent); }
-  .pmw-panelbtn:hover { border-color: var(--border-strong); }
+  /* Warna dikelompokkan per keluarga panel (ITCCP / MMSP / lainnya) supaya grid
+     lebih cepat dipindai - warnanya membawa informasi, bukan sekadar dekorasi. */
+  .pmw-panelbtn { --pb-bg: var(--fam-etc-bg); --pb-fg: var(--fam-etc-fg); --pb-line: var(--fam-etc-line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: var(--pb-bg); border: 1px solid var(--pb-line); border-radius: 12px;
+    padding: 13px 8px; font-size: 12px; font-weight: 600; color: var(--pb-fg); cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease; }
+  .pmw-panelbtn.fam-ctrl { --pb-bg: var(--fam-ctrl-bg); --pb-fg: var(--fam-ctrl-fg); --pb-line: var(--fam-ctrl-line); }
+  .pmw-panelbtn.fam-mms  { --pb-bg: var(--fam-mms-bg);  --pb-fg: var(--fam-mms-fg);  --pb-line: var(--fam-mms-line); }
+  .pmw-panelbtn i { font-size: 18px; color: var(--pb-fg); width: 34px; height: 34px; display: flex;
+    align-items: center; justify-content: center; border-radius: 50%;
+    background: var(--surface-1); border: 1px solid var(--pb-line); }
+  .pmw-panelbtn:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.12); }
   .pmw-hint { font-size: 12px; padding: 8px 10px; border-radius: var(--radius); margin: 4px 0 12px; display: flex; align-items: center; gap: 6px; background: var(--bg-accent); color: var(--text-accent); }
   .pmw-note-hint { font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; }
   .pmw-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: var(--page-max); margin: 0 auto; background: var(--surface-1); padding: 10px 16px; border-top: 0.5px solid var(--border); display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -142,14 +168,12 @@
   @media (min-width: 640px) {
     .pmw-header { padding: 16px 20px; }
     .pmw-header h1 { font-size: 20px; }
-    .pmw-tab { padding: 13px; font-size: 14px; }
-    .pmw-main { padding: 16px; padding-bottom: 96px; }
+    .pmw-tab { padding: 11px; font-size: 14px; }
     .pmw-footer { padding: 12px 20px; }
     .pmw-footer .info { flex: 1 1 auto; }
   }
   @media (min-width: 1024px) {
     .pmw-footer { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
-    .pmw-main { padding: 20px; padding-bottom: 96px; }
     .pmw-card { padding: 1.15rem 1.35rem 0.85rem; }
     textarea.report { min-height: 340px; font-size: 12.5px; }
   }
@@ -159,6 +183,7 @@
 <div class="page">
   <div class="pmw-header">
     <button type="button" class="pmw-iconbtn" id="pwBack" aria-label="Kembali"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <div class="pmw-brand" id="pwBrand"><i class="ti ti-clipboard-check" aria-hidden="true"></i></div>
     <div>
       <h1 id="pwTitle">PM Control Panel</h1>
       <p id="pwSub">Memuat...</p>
@@ -255,6 +280,7 @@
   var pwForm = document.getElementById('pwForm');
   var pwData = document.getElementById('pwData');
   var pwBack = document.getElementById('pwBack');
+  var pwBrand = document.getElementById('pwBrand');
   var pwTabbar = document.getElementById('pwTabbar');
   var pwTabHome = document.getElementById('pwTabHome');
   var pwTabData = document.getElementById('pwTabData');
@@ -350,6 +376,7 @@
   function goHome(){
     pwForm.style.display = 'none'; pwData.style.display = 'none'; pwHome.style.display = 'block';
     pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
+    pwBrand.style.display = 'flex';
     pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Pilih panel untuk mulai input data';
     current = null; editingRowIndex = null; cameFromData = false;
     setTab('home');
@@ -358,6 +385,7 @@
   function goData(){
     pwForm.style.display = 'none'; pwHome.style.display = 'none'; pwData.style.display = 'block';
     pwFooter.style.display = 'none'; pwBack.style.display = 'none'; pwTabbar.style.display = 'flex';
+    pwBrand.style.display = 'flex';
     pwTitle.textContent = 'PM Control Panel'; pwSub.textContent = 'Semua data PM yang sudah diinput';
     current = null;
     setTab('data');
@@ -378,13 +406,20 @@
       showBanner('Gagal memuat daftar panel: ' + err.message, true);
     });
   }
+  // Keluarga panel menentukan warna tombolnya di grid.
+  function panelFamily(code){
+    var u = String(code).toUpperCase();
+    if (u.indexOf('ITCCP') > -1 || u.indexOf('IMCCP') > -1) return 'fam-ctrl';
+    if (u.indexOf('MMSP') > -1) return 'fam-mms';
+    return 'fam-etc';
+  }
   function renderGrid(filter){
     pwGrid.innerHTML = '';
     var list = panelListCache.filter(function(p){ return !filter || p.toLowerCase().indexOf(filter.toLowerCase()) > -1; });
     if (!list.length) { pwGrid.innerHTML = '<div class="pmw-empty">Belum ada panel. Pakai tombol "Tambah panel baru" di bawah.</div>'; return; }
     list.forEach(function(p){
       var b = document.createElement('button');
-      b.type = 'button'; b.className = 'pmw-panelbtn';
+      b.type = 'button'; b.className = 'pmw-panelbtn ' + panelFamily(p);
       b.innerHTML = '<i class="ti ti-server-2" aria-hidden="true"></i><span>' + p + '</span>';
       b.addEventListener('click', function(){ openForm(p, null); });
       pwGrid.appendChild(b);
@@ -480,6 +515,7 @@
     componentRegistry = [];
     pwHome.style.display = 'none'; pwData.style.display = 'none'; pwForm.style.display = 'block';
     pwFooter.style.display = 'flex'; pwBack.style.display = 'flex'; pwTabbar.style.display = 'none';
+    pwBrand.style.display = 'none';
     pwTitle.textContent = panel; pwSub.textContent = editingRowIndex ? 'Edit data tersimpan' : 'Memuat data panel...';
     pwForm.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat...</div>';
 
