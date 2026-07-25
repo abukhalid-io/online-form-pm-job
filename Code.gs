@@ -63,6 +63,8 @@ function doGet(e) {
       result = { success: true, data: gasGetHeaders() };
     } else if (action === 'gasDetails') {
       result = { success: true, data: gasGetDetails(e.parameter.id_pm) };
+    } else if (action === 'gasSchema') {
+      result = { success: true, data: gasInspectSchema() };
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -357,10 +359,46 @@ function getAllRecords() {
  * ditimpa. Menulis satu baris penuh akan menghapus rumusnya.
  * ==========================================================================*/
 
-var GAS_SPREADSHEET_ID = '';               // <-- WAJIB DIISI
-var GAS_HEADER_SHEET = 'PM_Header';
+// Sheet GAS berada di spreadsheet yang SAMA dengan ControlPanel.
+var GAS_SPREADSHEET_ID = SPREADSHEET_ID;
+var GAS_SHEET = 'GAS';
+var GAS_HEADER_SHEET = 'PM_Header';        // dipakai hanya kalau struktur 2-sheet dipilih
 var GAS_DETAIL_SHEET = 'PM_Detail_Iterasi';
 var GAS_DATA_START_ROW = 5;
+
+/**
+ * DIAGNOSTIK - baca struktur sheet GAS apa adanya supaya implementasi bisa
+ * dibuat sesuai kolom yang benar-benar ada, bukan ditebak.
+ * Panggil: ?action=gasSchema
+ */
+function gasInspectSchema() {
+  var ss = SpreadsheetApp.openById(GAS_SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(GAS_SHEET);
+  if (!sheet) {
+    return {
+      found: false,
+      sheetTersedia: ss.getSheets().map(function (s) { return s.getName(); })
+    };
+  }
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  var ambil = Math.min(lastRow, 10);
+  var out = {
+    found: true, sheet: GAS_SHEET, lastRow: lastRow, lastColumn: lastCol,
+    barisAwal: [], formulaPerKolom: []
+  };
+  if (ambil > 0) out.barisAwal = sheet.getRange(1, 1, ambil, lastCol).getDisplayValues();
+  // Rumus di baris data pertama -> menandai kolom mana yang tidak boleh ditulis app.
+  if (lastRow >= 2) {
+    var f = sheet.getRange(2, 1, Math.min(lastRow - 1, 5), lastCol).getFormulas();
+    for (var c = 0; c < lastCol; c++) {
+      for (var r = 0; r < f.length; r++) {
+        if (f[r][c]) { out.formulaPerKolom.push({ kolom: c + 1, contoh: f[r][c] }); break; }
+      }
+    }
+  }
+  return out;
+}
 
 // Nomor kolom (A=1). Dipakai untuk menurunkan rumus ke baris baru.
 var GAS_HEADER_FORMULA_COLS = [4, 10];              // D, J
