@@ -1206,6 +1206,11 @@
     var el = document.getElementById(id);
     return el ? (el.value || '').trim() : '';
   }
+  // Tahap 100% ditentukan oleh nomor iterasi menurut SOP, dipakai di form
+  // (tampilan) dan saat submit (payload) supaya keduanya tidak pernah beda.
+  function gasTahapFor_(no){
+    return no === 1 ? 'Verifikasi Awal' : 'Setelah Kalibrasi ke-' + (no - 1);
+  }
   function gasNumOrEmpty(v){
     return (v === undefined || v === null || v === '' || v === '-') ? '' : Number(v);
   }
@@ -1420,9 +1425,10 @@
     wrap.innerHTML = '<div class="pmw-empty"><span class="pmw-spinner" aria-hidden="true"></span> Memuat sesi...</div>';
     document.getElementById('pwGasSesi').innerHTML = ''; // hindari id ganda, lihat openGasSesiBaru
 
-    Promise.all([apiGet('gasSessions'), apiGet('gasIterations', { id_pm: idPm })]).then(function(res){
+    Promise.all([apiGet('gasSessions'), apiGet('gasIterations', { id_pm: idPm }), apiGet('gasAnalyzers')]).then(function(res){
       gasSessionCache = res[0] || [];
       gasIterCache = res[1] || [];
+      gasAnalyzerCache = res[2] || [];   // dipakai untuk satuan toleransi zero, lihat buildGasIterForm
       var sesi = gasSessionCache.filter(function(s){ return s.id_pm === idPm; })[0];
       if (!sesi) throw new Error('Sesi ' + idPm + ' tidak ditemukan.');
       gasCurrentSesi = sesi;
@@ -1532,21 +1538,35 @@
     timer.appendChild(clock); timer.appendChild(lbl); timer.appendChild(tbtn);
     c.appendChild(timer);
 
-    var tahapDefault = no === 1 ? 'Verifikasi Awal' : 'Setelah Kalibrasi ke-' + (no - 1);
+    // Tahap 100% ditentukan oleh nomor iterasi menurut SOP (bukan pilihan bebas),
+    // jadi ditampilkan saja - tidak perlu diketik atau dipilih.
+    var tahap = gasTahapFor_(no);
     var terakhir = gasIterCache.slice().sort(function(a,b){ return Number(b.no_iterasi)-Number(a.no_iterasi); })[0];
     var tolZeroDefault = terakhir ? terakhir.tol_zero : GAS_TOLERANSI_DEFAULT;
     var tolSpanDefault = terakhir ? terakhir.tol_span : GAS_TOLERANSI_DEFAULT;
+    // Toleransi Zero memakai satuan ukur analyzer-nya sendiri (ppm untuk CO/CO2,
+    // % untuk O2, dst dari Master_Analyzer) - bukan selalu %, beda dengan Span
+    // yang memang selalu dalam persen.
+    var analyzer = gasAnalyzerById(sesi.id_analyzer);
+    var satuanZero = analyzer && analyzer.satuan ? analyzer.satuan : 'unit';
 
-    var r = row('c2');
-    r.appendChild(field('Tahap', plainText(tahapDefault, '', 'pwGasTahap')));
+    var tahapRow = document.createElement('div'); tahapRow.className = 'pmw-readonly';
+    tahapRow.innerHTML = '<span>Tahap (otomatis)</span><b>' + tahap + '</b>';
+    c.appendChild(tahapRow);
+
+    var r1 = row('c2');
     var bz = numberInput('pwGasBacaZero', 'cth: 0.5'); bz.disabled = true;
     var bs = numberInput('pwGasBacaSpan', 'cth: 199'); bs.disabled = true;
-    r.appendChild(field('Pembacaan Zero', bz));
-    r.appendChild(field('Pembacaan Span', bs));
-    r.appendChild(field('Toleransi Zero (unit)', numberInput('pwGasTolZero', '', tolZeroDefault)));
-    r.appendChild(field('Toleransi Span (%)', numberInput('pwGasTolSpan', '', tolSpanDefault)));
-    r.appendChild(field('Tindakan kalibrasi?', select(['Tidak', 'Ya'], 'Tidak', 'pwGasTindakan')));
-    c.appendChild(r);
+    r1.appendChild(field('Pembacaan Zero', bz));
+    r1.appendChild(field('Pembacaan Span', bs));
+    c.appendChild(r1);
+
+    var r2 = row('c2');
+    r2.appendChild(field('Toleransi Zero (' + satuanZero + ')', numberInput('pwGasTolZero', '', tolZeroDefault)));
+    r2.appendChild(field('Toleransi Span (%)', numberInput('pwGasTolSpan', '', tolSpanDefault)));
+    c.appendChild(r2);
+
+    c.appendChild(field('Tindakan kalibrasi?', select(['Tidak', 'Ya'], 'Tidak', 'pwGasTindakan')));
 
     var ta = document.createElement('textarea'); ta.id = 'pwGasIterCatatan'; ta.rows = 2; ta.placeholder = 'Opsional';
     c.appendChild(field('Catatan', ta));
@@ -1626,7 +1646,7 @@
     var payload = {
       id_pm: sesi.id_pm,
       no_iterasi: no,
-      tahap: gasVal('pwGasTahap') || '-',
+      tahap: gasTahapFor_(no),
       waktu: gasNow(),
       baca_zero: bacaZero,
       baca_span: bacaSpan,

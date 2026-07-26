@@ -67,6 +67,8 @@ function doGet(e) {
       result = { success: true, data: gasGetSessions() };
     } else if (action === 'gasIterations') {
       result = { success: true, data: gasGetIterations(e.parameter.id_pm) };
+    } else if (action === 'gasSetupFormulas') {
+      result = { success: true, message: gasSetupFormulas() };
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -419,30 +421,37 @@ function gasNextSeqId_(sheet, idCol, prefix) {
 }
 
 // ---------- rumus ----------
+// PENTING: spreadsheet ini locale Indonesia (in_ID). Google Sheets locale
+// non-English memakai TITIK KOMA (;) sebagai pemisah argumen formula, BUKAN
+// koma (,) - menulis formula dengan koma di sini menghasilkan #ERROR! di
+// sheet. Koma di dalam teks string ("STOP - Sudah 10x, ESKALASI...") aman,
+// itu bukan pemisah argumen.
 function gasHeaderFormulasFor_(r) {
   return [
-    '=IFERROR(VLOOKUP($C' + r + ',' + GAS_ANALYZER_SHEET + '!$A:$C,3,FALSE),"")',
-    '=COUNTIF(' + GAS_DETAIL_SHEET + '!$B:$B,$A' + r + ')'
+    '=IFERROR(VLOOKUP($C' + r + ';' + GAS_ANALYZER_SHEET + '!$A:$C;3;FALSE);"")',
+    '=COUNTIF(' + GAS_DETAIL_SHEET + '!$B:$B;$A' + r + ')'
   ];
 }
 function gasDetailFormulasFor_(r) {
-  var tabungZero = 'IFERROR(VLOOKUP($B' + r + ',' + GAS_HEADER_SHEET + '!$A:$G,6,FALSE),"")';
-  var tabungSpan = 'IFERROR(VLOOKUP($B' + r + ',' + GAS_HEADER_SHEET + '!$A:$G,7,FALSE),"")';
-  var H = '=IFERROR(VLOOKUP(' + tabungZero + ',' + GAS_CYLINDER_SHEET + '!$A:$G,7,FALSE),"")';
-  var I = '=IFERROR(VLOOKUP(' + tabungSpan + ',' + GAS_CYLINDER_SHEET + '!$A:$H,8,FALSE),"")';
-  var L = '=IF(OR($F' + r + '="",$H' + r + '=""),"",ABS($F' + r + '-$H' + r + '))';
-  var M = '=IF(OR($G' + r + '="",$I' + r + '="",$I' + r + '=0),"",ABS($G' + r + '-$I' + r + ')/$I' + r + '*100)';
-  var N = '=IF(AND($L' + r + '="",$M' + r + '=""),"",' +
-    'IF(AND(IF($L' + r + '="",TRUE,$L' + r + '<=$J' + r + '),IF($M' + r + '="",TRUE,$M' + r + '<=$K' + r + ')),' +
-    '"Lolos","Tidak Lolos"))';
-  var P = '=IF($C' + r + '>=10,IF($N' + r + '="Tidak Lolos","STOP - Sudah 10x, ESKALASI ke Supervisor/Ganti Alat",""),' +
-    'IF($C' + r + '>=8,"Perhatian - mendekati batas maks 10x",""))';
+  var tabungZero = 'IFERROR(VLOOKUP($B' + r + ';' + GAS_HEADER_SHEET + '!$A:$G;6;FALSE);"")';
+  var tabungSpan = 'IFERROR(VLOOKUP($B' + r + ';' + GAS_HEADER_SHEET + '!$A:$G;7;FALSE);"")';
+  var H = '=IFERROR(VLOOKUP(' + tabungZero + ';' + GAS_CYLINDER_SHEET + '!$A:$G;7;FALSE);"")';
+  var I = '=IFERROR(VLOOKUP(' + tabungSpan + ';' + GAS_CYLINDER_SHEET + '!$A:$H;8;FALSE);"")';
+  var L = '=IF(OR($F' + r + '="";$H' + r + '="");"";ABS($F' + r + '-$H' + r + '))';
+  var M = '=IF(OR($G' + r + '="";$I' + r + '="";$I' + r + '=0);"";ABS($G' + r + '-$I' + r + ')/$I' + r + '*100)';
+  var N = '=IF(AND($L' + r + '="";$M' + r + '="");"";' +
+    'IF(AND(IF($L' + r + '="";TRUE;$L' + r + '<=$J' + r + ');IF($M' + r + '="";TRUE;$M' + r + '<=$K' + r + '));' +
+    '"Lolos";"Tidak Lolos"))';
+  var P = '=IF($C' + r + '>=10;IF($N' + r + '="Tidak Lolos";"STOP - Sudah 10x, ESKALASI ke Supervisor/Ganti Alat";"");' +
+    'IF($C' + r + '>=8;"Perhatian - mendekati batas maks 10x";""))';
   return [H, I, L, M, N, P];
 }
+// Kolom hijau HANYA PERNAH diisi lewat fungsi ini (user diminta tidak pernah
+// mengetik manual), jadi aman menimpa apa pun yang ada di situ - termasuk
+// memperbaiki formula lama yang salah tanpa perlu langkah pembersihan terpisah.
 function gasEnsureFormulas_(sheet, r, cols, formulas) {
   for (var i = 0; i < cols.length; i++) {
-    var cell = sheet.getRange(r, cols[i]);
-    if (cell.getFormula() === '') cell.setFormula(formulas[i]);
+    sheet.getRange(r, cols[i]).setFormula(formulas[i]);
   }
 }
 
