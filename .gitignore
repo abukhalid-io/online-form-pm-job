@@ -12,8 +12,12 @@ node_modules/
 
 # clasp - .clasp.json berisi Script ID (config lokal, bukan rahasia tapi
 # tidak perlu ikut repo); token OAuth clasp disimpan terpisah di home dir.
+# Code.js: nama file yang dipakai clasp untuk representasi lokal Code.gs kalau
+# ditarik pakai `clasp pull`/`clone` tanpa .claspignore yang benar - Code.gs
+# tetap satu-satunya sumber kebenaran, Code.js dibuang setiap kali muncul.
 .clasp.json
 .clasprc.json
+Code.js
 
 # Next.js / Vercel
 .next/
