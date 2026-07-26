@@ -10,6 +10,11 @@ service-account*.json
 # Dependencies
 node_modules/
 
+# clasp - .clasp.json berisi Script ID (config lokal, bukan rahasia tapi
+# tidak perlu ikut repo); token OAuth clasp disimpan terpisah di home dir.
+.clasp.json
+.clasprc.json
+
 # Next.js / Vercel
 .next/
 out/
