@@ -69,6 +69,8 @@ function doGet(e) {
       result = { success: true, data: gasGetIterations(e.parameter.id_pm) };
     } else if (action === 'gasSetupFormulas') {
       result = { success: true, message: gasSetupFormulas() };
+    } else if (action === 'gasSetupSampleColumns') {
+      result = { success: true, message: gasSetupSampleColumns() };
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -92,7 +94,7 @@ function doPost(e) {
     } else if (action === 'gasSessionSubmit') {
       result = gasSubmitSession(body.data);
     } else if (action === 'gasSessionStatus') {
-      result = gasUpdateSessionStatus(body.id_pm, body.status_akhir, body.catatan);
+      result = gasUpdateSessionStatus(body.id_pm, body.status_akhir, body.catatan, body.sample_akhir);
     } else if (action === 'gasIterationSubmit') {
       result = gasSubmitIteration(body.data);
     } else {
@@ -484,6 +486,29 @@ function gasSetupFormulas() {
   return 'Rumus terpasang: ' + nH + ' baris PM_Gas_Header, ' + nD + ' baris PM_Gas_Detail_Iterasi.';
 }
 
+/**
+ * Jalankan SEKALI dari editor Apps Script (atau ?action=gasSetupSampleColumns)
+ * untuk memasang header kolom N/O "Pembacaan Sample Awal/Akhir" di
+ * PM_Gas_Header. Ditambahkan di UJUNG (kolom 14-15), bukan disisipkan di
+ * tengah, supaya kolom A-M yang sudah ada (dan formula D/J yang mengacunya)
+ * tidak ikut bergeser. Aman dijalankan berkali-kali - hanya menulis kalau
+ * sel header masih kosong.
+ */
+function gasSetupSampleColumns() {
+  var hdr = getGasSheetNamed_(GAS_HEADER_SHEET);
+  var labels = ['Pembacaan Sample Awal', 'Pembacaan Sample Akhir'];
+  var ditulis = [];
+  for (var i = 0; i < labels.length; i++) {
+    var cell = hdr.getRange(4, 14 + i);
+    if (String(cell.getValue()).trim() === '') {
+      cell.setValue(labels[i]).setFontWeight('bold').setBackground('#1F4E78').setFontColor('#FFFFFF').setWrap(true);
+      ditulis.push(labels[i]);
+    }
+  }
+  SpreadsheetApp.flush();
+  return ditulis.length ? ('Header ditambahkan: ' + ditulis.join(', ')) : 'Header N/O sudah ada, tidak ada perubahan.';
+}
+
 // ---------- baca data ----------
 function gasGetAnalyzers() {
   var sheet = getGasSheetNamed_(GAS_ANALYZER_SHEET);
@@ -516,7 +541,9 @@ function gasGetSessions() {
   var sheet = getGasSheetNamed_(GAS_HEADER_SHEET);
   var last = sheet.getLastRow();
   if (last < GAS_DATA_START_ROW) return [];
-  var vals = sheet.getRange(GAS_DATA_START_ROW, 1, last - GAS_DATA_START_ROW + 1, 13).getDisplayValues();
+  // 15 kolom: A-M struktur asli + N,O "Pembacaan Sample Awal/Akhir" (ditambah
+  // di ujung, bukan disisipkan, supaya kolom A-M dan formulanya tidak bergeser).
+  var vals = sheet.getRange(GAS_DATA_START_ROW, 1, last - GAS_DATA_START_ROW + 1, 15).getDisplayValues();
   var out = [];
   for (var i = 0; i < vals.length; i++) {
     var r = vals[i];
@@ -525,7 +552,8 @@ function gasGetSessions() {
       rowIndex: GAS_DATA_START_ROW + i,
       id_pm: r[0], tanggal: r[1], id_analyzer: r[2], jenis_gas: r[3], teknisi: r[4],
       id_tabung_zero: r[5], id_tabung_span: r[6], tekanan_zero: r[7], tekanan_span: r[8],
-      jumlah_iterasi: r[9], status_akhir: r[10], waktu_selesai: r[11], catatan: r[12]
+      jumlah_iterasi: r[9], status_akhir: r[10], waktu_selesai: r[11], catatan: r[12],
+      sample_awal: r[13], sample_akhir: r[14]
     });
   }
   return out;
@@ -571,13 +599,15 @@ function gasSubmitSession(d) {
     d.tekanan_span === undefined || d.tekanan_span === '' ? dash : d.tekanan_span
   ]]);
   sheet.getRange(row, 11, 1, 3).setValues([[d.status_akhir || 'Berjalan', d.waktu_selesai || '', d.catatan || '']]);
+  // N - Pembacaan Sample Awal, dicatat sekali di awal sesi sebelum kalibrasi disentuh.
+  sheet.getRange(row, 14).setValue(d.sample_awal === undefined || d.sample_awal === '' ? '' : d.sample_awal);
 
   gasEnsureFormulas_(sheet, row, GAS_HEADER_FORMULA_COLS, gasHeaderFormulasFor_(row));
   SpreadsheetApp.flush();
   return { success: true, id_pm: id, row: row, message: 'Sesi PM ' + id + ' dibuat.' };
 }
 
-function gasUpdateSessionStatus(idPm, statusAkhir, catatan) {
+function gasUpdateSessionStatus(idPm, statusAkhir, catatan, sampleAkhir) {
   if (!idPm) throw new Error('id_pm wajib diisi.');
   var sheet = getGasSheetNamed_(GAS_HEADER_SHEET);
   var last = sheet.getLastRow();
@@ -590,6 +620,8 @@ function gasUpdateSessionStatus(idPm, statusAkhir, catatan) {
   sheet.getRange(row, 11).setValue(statusAkhir);                                    // K
   sheet.getRange(row, 12).setValue(Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm:ss')); // L
   if (catatan) sheet.getRange(row, 13).setValue(catatan);                           // M
+  // O - Pembacaan Sample Akhir, dicatat sekali di akhir sesi setelah zero & span lolos.
+  if (sampleAkhir !== undefined && sampleAkhir !== '') sheet.getRange(row, 15).setValue(sampleAkhir);
   SpreadsheetApp.flush();
   return { success: true, message: 'Status sesi ' + idPm + ' diperbarui: ' + statusAkhir + '.' };
 }

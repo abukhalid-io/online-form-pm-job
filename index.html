@@ -1206,10 +1206,35 @@
     var el = document.getElementById(id);
     return el ? (el.value || '').trim() : '';
   }
-  // Tahap 100% ditentukan oleh nomor iterasi menurut SOP, dipakai di form
-  // (tampilan) dan saat submit (payload) supaya keduanya tidak pernah beda.
-  function gasTahapFor_(no){
-    return no === 1 ? 'Verifikasi Awal' : 'Setelah Kalibrasi ke-' + (no - 1);
+  // Tahap 100% ditentukan oleh fase (zero/span) + urutan percobaan DALAM fase
+  // itu, dipakai di form (tampilan) dan saat submit (payload) supaya keduanya
+  // tidak pernah beda. Kata "Verifikasi Zero"/"Verifikasi Span" di depan juga
+  // dipakai gasFaseSaatIni() untuk mendeteksi fase mana yang sudah lolos -
+  // jangan diubah tanpa menyesuaikan fungsi itu juga.
+  function gasFaseLabel_(fase){ return fase === 'zero' ? 'Verifikasi Zero' : 'Verifikasi Span'; }
+  function gasTahapFor_(fase, noDalamFase){
+    var label = gasFaseLabel_(fase);
+    return noDalamFase === 1 ? (label + ' - Awal') : (label + ' - Setelah Kalibrasi ke-' + (noDalamFase - 1));
+  }
+  function gasStatusLolos(status){
+    var s = String(status || '').toLowerCase();
+    return s.indexOf('lolos') > -1 && s.indexOf('tidak') === -1;
+  }
+  // Urutan percobaan DALAM satu fase (dipakai untuk teks "Setelah Kalibrasi
+  // ke-N" per fase, dan default nilai toleransi dari percobaan sebelumnya di
+  // fase yang sama - toleransi zero/span bisa beda kebijakan per fase).
+  function gasIterFase_(iterList, fase){
+    var label = gasFaseLabel_(fase);
+    return iterList.filter(function(d){ return String(d.tahap || '').indexOf(label) === 0; });
+  }
+  // Zero HARUS lolos dulu sebelum Span terbuka ("saling mengunci" per SOP).
+  // Begitu kedua fase lolos, sesi siap ditutup (tinggal catat Sample Akhir).
+  function gasFaseSaatIni(iterList){
+    var zeroLolos = gasIterFase_(iterList, 'zero').some(function(d){ return gasStatusLolos(d.status); });
+    if (!zeroLolos) return 'zero';
+    var spanLolos = gasIterFase_(iterList, 'span').some(function(d){ return gasStatusLolos(d.status); });
+    if (!spanLolos) return 'span';
+    return 'selesai';
   }
   function gasNumOrEmpty(v){
     return (v === undefined || v === null || v === '' || v === '-') ? '' : Number(v);
@@ -1360,9 +1385,13 @@
     r2.appendChild(field('Tekanan Span terkini (bar)', numberInput('pwGasTekananSpan', 'cth: 140')));
     c2.appendChild(r2); wrap.appendChild(c2);
 
-    var c3 = card('Catatan', null, 'ti-notes');
+    var c3 = card('Pembacaan sample sebelum PM', 'catat gas proses SEBELUM disentuh, sebagai pembanding di akhir', 'ti-clipboard-check');
+    c3.appendChild(field('Pembacaan Sample Awal', numberInput('pwGasSampleAwal', 'opsional tapi disarankan')));
+    wrap.appendChild(c3);
+
+    var c4 = card('Catatan', null, 'ti-notes');
     var ta = document.createElement('textarea'); ta.id = 'pwGasCatatan'; ta.rows = 2; ta.placeholder = 'Opsional';
-    c3.appendChild(field('Catatan sesi', ta)); wrap.appendChild(c3);
+    c4.appendChild(field('Catatan sesi', ta)); wrap.appendChild(c4);
 
     var save = document.createElement('button');
     save.type = 'button'; save.className = 'pmw-btn primary block';
@@ -1404,6 +1433,7 @@
       id_tabung_span: gasVal('pwGasTabungSpan') || '-',
       tekanan_zero: gasVal('pwGasTekananZero'),
       tekanan_span: gasVal('pwGasTekananSpan'),
+      sample_awal: gasVal('pwGasSampleAwal'),
       catatan: document.getElementById('pwGasCatatan').value || ''
     };
     var label = btn.innerHTML;
@@ -1460,20 +1490,35 @@
     var nextNo = jumlah + 1;
     var tertutup = gasSesiTertutup(sesi);
     var penuh = nextNo > GAS_MAX_ITERASI;
+    // Zero dan Span saling mengunci: Span baru terbuka setelah Zero LULUS.
+    var fase = gasFaseSaatIni(gasIterCache);
+    var noDalamFase = gasIterFase_(gasIterCache, fase).length + 1;
+    var subFase = fase === 'zero' ? 'Fase ZERO - percobaan ke-' + noDalamFase
+                : fase === 'span' ? 'Fase SPAN - percobaan ke-' + noDalamFase
+                : 'Zero & Span sudah LULUS';
     setChrome({ back: true, backTo: goGasHome, title: sesi.id_analyzer || sesi.id_pm,
-      sub: tertutup ? 'Sesi ditutup: ' + sesi.status_akhir : (penuh ? 'Iterasi sudah penuh' : 'Iterasi berikutnya: ke-' + nextNo) });
+      sub: tertutup ? 'Sesi ditutup: ' + sesi.status_akhir : (penuh ? 'Iterasi sudah penuh' : subFase) });
 
     var cInfo = card('Sesi', sesi.id_pm, 'ti-info-circle');
-    [['Tanggal', sesi.tanggal], ['Analyzer', sesi.id_analyzer], ['Jenis gas', sesi.jenis_gas],
+    var infoRows = [['Tanggal', sesi.tanggal], ['Analyzer', sesi.id_analyzer], ['Jenis gas', sesi.jenis_gas],
      ['Teknisi', sesi.teknisi],
      ['Tabung zero / span', (sesi.id_tabung_zero || '-') + ' / ' + (sesi.id_tabung_span || '-')],
      ['Tekanan zero / span (bar)', (sesi.tekanan_zero || '-') + ' / ' + (sesi.tekanan_span || '-')],
-     ['Jumlah iterasi', sesi.jumlah_iterasi || '0']
-    ].forEach(function(p){
+     ['Pembacaan sample awal', sesi.sample_awal || '-'],
+     ['Jumlah iterasi', sesi.jumlah_iterasi || '0']];
+    if (sesi.sample_akhir) infoRows.push(['Pembacaan sample akhir', sesi.sample_akhir]);
+    infoRows.forEach(function(p){
       var d = document.createElement('div'); d.className = 'pmw-readonly';
       d.innerHTML = '<span>' + p[0] + '</span><b>' + (p[1] || '-') + '</b>';
       cInfo.appendChild(d);
     });
+    // Progres fase - tampil terus supaya jelas Zero sudah lolos/belum, bukan
+    // cuma tersirat dari daftar riwayat di bawah.
+    var faseRow = document.createElement('div'); faseRow.className = 'pmw-readonly';
+    faseRow.innerHTML = '<span>Progres verifikasi</span>';
+    faseRow.appendChild(gasStatusPill(fase === 'zero' ? 'Zero berjalan' : 'Zero lolos'));
+    if (fase !== 'zero') faseRow.appendChild(gasStatusPill(fase === 'span' ? 'Span berjalan' : 'Span lolos'));
+    cInfo.appendChild(faseRow);
     var statusRow = document.createElement('div'); statusRow.className = 'pmw-readonly';
     statusRow.innerHTML = '<span>Status akhir</span>';
     statusRow.appendChild(gasStatusPill(sesi.status_akhir || 'Berjalan'));
@@ -1485,7 +1530,7 @@
       var reopen = document.createElement('button');
       reopen.type = 'button'; reopen.className = 'pmw-btn block';
       reopen.innerHTML = '<i class="ti ti-lock-open" aria-hidden="true"></i>Buka kembali sesi ini';
-      reopen.addEventListener('click', function(){ ubahStatusSesi(sesi.id_pm, 'Berjalan', '', reopen); });
+      reopen.addEventListener('click', function(){ ubahStatusSesi(sesi.id_pm, 'Berjalan', '', null, reopen); });
       cTutup.appendChild(reopen);
       wrap.appendChild(cTutup);
     } else if (penuh){
@@ -1498,11 +1543,23 @@
       esk.innerHTML = '<i class="ti ti-flag" aria-hidden="true"></i>Tandai Gagal - Eskalasi';
       esk.addEventListener('click', function(){
         ubahStatusSesi(sesi.id_pm, 'Gagal - Eskalasi (max 10x kalibrasi belum lolos)',
-          'Sudah 10x kalibrasi, belum lolos toleransi. Periksa tabung gas standar / servis analyzer.', esk);
+          'Sudah 10x kalibrasi, belum lolos toleransi. Periksa tabung gas standar / servis analyzer.', null, esk);
       });
       cFull.appendChild(esk); wrap.appendChild(cFull);
+    } else if (fase === 'selesai'){
+      var cDone = card('Zero & Span sudah LULUS', 'catat pembacaan sample akhir untuk menutup sesi', 'ti-circle-check');
+      var sampleAkhir = numberInput('pwGasSampleAkhirInput', 'nilai gas proses saat ini');
+      cDone.appendChild(field('Pembacaan Sample Akhir', sampleAkhir));
+      var tutup = document.createElement('button');
+      tutup.type = 'button'; tutup.className = 'pmw-btn primary block';
+      tutup.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Catat &amp; Tutup Sesi (Selesai - Lolos)';
+      tutup.addEventListener('click', function(){
+        ubahStatusSesi(sesi.id_pm, 'Selesai - Lolos', '', gasVal('pwGasSampleAkhirInput'), tutup);
+      });
+      cDone.appendChild(tutup);
+      wrap.appendChild(cDone);
     } else {
-      wrap.appendChild(buildGasIterForm(sesi, nextNo));
+      wrap.appendChild(buildGasIterForm(sesi, nextNo, fase, noDalamFase));
     }
 
     var cList = card('Riwayat iterasi', '(' + gasIterCache.length + ')', 'ti-list-details');
@@ -1516,10 +1573,10 @@
     }
     wrap.appendChild(cList);
   }
-  function ubahStatusSesi(idPm, status, catatan, btn){
+  function ubahStatusSesi(idPm, status, catatan, sampleAkhir, btn){
     var label = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="pmw-spinner" aria-hidden="true"></span> Menyimpan...';
-    apiPost('gasSessionStatus', { id_pm: idPm, status_akhir: status, catatan: catatan }).then(function(res){
+    apiPost('gasSessionStatus', { id_pm: idPm, status_akhir: status, catatan: catatan, sample_akhir: sampleAkhir || '' }).then(function(res){
       showBanner(res.message || 'Status sesi diperbarui.');
       openGasIter(idPm);
     }).catch(function(err){
@@ -1527,8 +1584,9 @@
       btn.disabled = false; btn.innerHTML = label;
     });
   }
-  function buildGasIterForm(sesi, no){
-    var c = card('Input iterasi ke-' + no, 'catat setelah gas stabil', 'ti-square-plus');
+  function buildGasIterForm(sesi, no, fase, noDalamFase){
+    var faseLabel = fase === 'zero' ? 'ZERO' : 'SPAN';
+    var c = card('Input Verifikasi ' + faseLabel + ' - percobaan ke-' + noDalamFase, 'catat setelah gas stabil', 'ti-square-plus');
     var key = gasTimerKey(sesi.id_pm, no);
 
     var timer = document.createElement('div'); timer.className = 'pmw-timer'; timer.id = 'pwGasTimer';
@@ -1538,12 +1596,11 @@
     timer.appendChild(clock); timer.appendChild(lbl); timer.appendChild(tbtn);
     c.appendChild(timer);
 
-    // Tahap 100% ditentukan oleh nomor iterasi menurut SOP (bukan pilihan bebas),
+    // Tahap 100% ditentukan oleh fase + urutan percobaan (bukan pilihan bebas),
     // jadi ditampilkan saja - tidak perlu diketik atau dipilih.
-    var tahap = gasTahapFor_(no);
-    var terakhir = gasIterCache.slice().sort(function(a,b){ return Number(b.no_iterasi)-Number(a.no_iterasi); })[0];
-    var tolZeroDefault = terakhir ? terakhir.tol_zero : GAS_TOLERANSI_DEFAULT;
-    var tolSpanDefault = terakhir ? terakhir.tol_span : GAS_TOLERANSI_DEFAULT;
+    var tahap = gasTahapFor_(fase, noDalamFase);
+    var iterFaseIni = gasIterFase_(gasIterCache, fase);
+    var terakhir = iterFaseIni.slice().sort(function(a,b){ return Number(b.no_iterasi)-Number(a.no_iterasi); })[0];
     // Toleransi Zero memakai satuan ukur analyzer-nya sendiri (ppm untuk CO/CO2,
     // % untuk O2, dst dari Master_Analyzer) - bukan selalu %, beda dengan Span
     // yang memang selalu dalam persen.
@@ -1554,17 +1611,24 @@
     tahapRow.innerHTML = '<span>Tahap (otomatis)</span><b>' + tahap + '</b>';
     c.appendChild(tahapRow);
 
-    var r1 = row('c2');
-    var bz = numberInput('pwGasBacaZero', 'cth: 0.5'); bz.disabled = true;
-    var bs = numberInput('pwGasBacaSpan', 'cth: 199'); bs.disabled = true;
-    r1.appendChild(field('Pembacaan Zero', bz));
-    r1.appendChild(field('Pembacaan Span', bs));
-    c.appendChild(r1);
-
-    var r2 = row('c2');
-    r2.appendChild(field('Toleransi Zero (' + satuanZero + ')', numberInput('pwGasTolZero', '', tolZeroDefault)));
-    r2.appendChild(field('Toleransi Span (%)', numberInput('pwGasTolSpan', '', tolSpanDefault)));
-    c.appendChild(r2);
+    // Hanya SATU sisi (zero atau span) yang ditampilkan - sesuai fase yang
+    // sedang berjalan. Field sisi lain tidak dirender sama sekali, bukan
+    // sekadar disembunyikan, supaya tidak ada risiko data nyasar terkirim.
+    if (fase === 'zero'){
+      var rz = row('c2');
+      var bz = numberInput('pwGasBacaZero', 'cth: 0.5'); bz.disabled = true;
+      rz.appendChild(field('Pembacaan Zero', bz));
+      rz.appendChild(field('Toleransi Zero (' + satuanZero + ')',
+        numberInput('pwGasTolZero', '', terakhir ? terakhir.tol_zero : GAS_TOLERANSI_DEFAULT)));
+      c.appendChild(rz);
+    } else {
+      var rs = row('c2');
+      var bs = numberInput('pwGasBacaSpan', 'cth: 199'); bs.disabled = true;
+      rs.appendChild(field('Pembacaan Span', bs));
+      rs.appendChild(field('Toleransi Span (%)',
+        numberInput('pwGasTolSpan', '', terakhir ? terakhir.tol_span : GAS_TOLERANSI_DEFAULT)));
+      c.appendChild(rs);
+    }
 
     c.appendChild(field('Tindakan kalibrasi?', select(['Tidak', 'Ya'], 'Tidak', 'pwGasTindakan')));
 
@@ -1577,7 +1641,7 @@
     // ini ada jeda singkat di mana pembacaan bisa disimpan sebelum gas stabil.
     save.disabled = true;
     save.innerHTML = '<i class="ti ti-clock" aria-hidden="true"></i>Tunggu stabilisasi dulu';
-    save.addEventListener('click', function(){ simpanGasIter(sesi, no, save); });
+    save.addEventListener('click', function(){ simpanGasIter(sesi, no, fase, save); });
     c.appendChild(save);
 
     // Timer dirender setelah kartu masuk DOM (elemennya dicari lewat getElementById).
@@ -1636,22 +1700,25 @@
     stopGasTimer();
     gasTimerTick = setInterval(render, 1000);
   }
-  function simpanGasIter(sesi, no, btn){
-    var bacaZero = gasVal('pwGasBacaZero');
-    var bacaSpan = gasVal('pwGasBacaSpan');
-    if (bacaZero === '' && bacaSpan === ''){
-      showBanner('Isi minimal salah satu pembacaan (zero atau span).', true);
+  function simpanGasIter(sesi, no, fase, btn){
+    // Hanya kirim sisi yang sesuai fase - sisi lain SENGAJA tidak diisi sama
+    // sekali (bukan cuma dikosongkan), supaya rumus Status di sheet menilai
+    // murni berdasarkan gas yang sedang diverifikasi saat ini.
+    var bacaan = fase === 'zero' ? gasVal('pwGasBacaZero') : gasVal('pwGasBacaSpan');
+    if (bacaan === ''){
+      showBanner('Isi pembacaan ' + (fase === 'zero' ? 'Zero' : 'Span') + ' dulu.', true);
       return;
     }
+    var noDalamFase = gasIterFase_(gasIterCache, fase).length + 1;
     var payload = {
       id_pm: sesi.id_pm,
       no_iterasi: no,
-      tahap: gasTahapFor_(no),
+      tahap: gasTahapFor_(fase, noDalamFase),
       waktu: gasNow(),
-      baca_zero: bacaZero,
-      baca_span: bacaSpan,
-      tol_zero: gasVal('pwGasTolZero'),
-      tol_span: gasVal('pwGasTolSpan'),
+      baca_zero: fase === 'zero' ? bacaan : '',
+      baca_span: fase === 'span' ? bacaan : '',
+      tol_zero: fase === 'zero' ? gasVal('pwGasTolZero') : '',
+      tol_span: fase === 'span' ? gasVal('pwGasTolSpan') : '',
       tindakan: gasVal('pwGasTindakan') || 'Tidak',
       catatan: document.getElementById('pwGasIterCatatan').value || ''
     };
@@ -1659,29 +1726,26 @@
     btn.disabled = true; btn.innerHTML = '<span class="pmw-spinner" aria-hidden="true"></span> Menyimpan...';
     apiPost('gasIterationSubmit', { data: payload }).then(function(res){
       gasTimerHapus(gasTimerKey(sesi.id_pm, no));
-      showBanner(res.message || 'Iterasi tersimpan.');
-      // Rumus di sheet sudah menghitung status; kalau LULUS, tawarkan menutup
-      // sesi supaya tidak lupa langkah 6 di SOP.
-      if (res.status && res.status.toLowerCase().indexOf('lolos') > -1 && res.status.toLowerCase().indexOf('tidak') === -1){
-        setTimeout(function(){
-          if (window.confirm('Iterasi ke-' + no + ' LOLOS. Tandai sesi ini "Selesai - Lolos" sekarang?')){
-            apiPost('gasSessionStatus', { id_pm: sesi.id_pm, status_akhir: 'Selesai - Lolos', catatan: '' })
-              .then(function(){ openGasIter(sesi.id_pm); })
-              .catch(function(err){ showBanner('Gagal menutup sesi: ' + err.message, true); openGasIter(sesi.id_pm); });
-          } else {
-            openGasIter(sesi.id_pm);
-          }
-        }, 300);
+      // Fase ZERO lolos -> lanjut otomatis ke fase SPAN, tidak perlu konfirmasi
+      // (baru "selesai" sungguhan setelah SPAN juga lolos - lihat buildGasIter
+      // yang menampilkan kartu "Catat & Tutup Sesi" saat fase === 'selesai').
+      if (fase === 'zero' && gasStatusLolos(res.status)){
+        showBanner('Verifikasi ZERO LULUS - lanjut ke verifikasi SPAN.');
+      } else if (res.peringatan && res.peringatan.indexOf('STOP') > -1){
+        showBanner(res.peringatan, true);
       } else {
-        if (res.peringatan && res.peringatan.indexOf('STOP') > -1){
-          showBanner(res.peringatan, true);
-        }
-        openGasIter(sesi.id_pm);
+        showBanner(res.message || 'Iterasi tersimpan.');
       }
+      openGasIter(sesi.id_pm);
     }).catch(function(err){
       showBanner('Gagal menyimpan: ' + err.message, true);
       btn.disabled = false; btn.innerHTML = label;
     });
+  }
+  // Standar Zero selalu 0 dalam praktiknya - `0 || '-'` salah menampilkan '-'
+  // karena 0 dianggap falsy di JS. Dipakai untuk semua angka yang boleh 0.
+  function gasDisp_(v){
+    return (v === '' || v === undefined || v === null) ? '-' : v;
   }
   function gasIterRow(d){
     var wrap = document.createElement('div'); wrap.className = 'pmw-datarow';
@@ -1692,12 +1756,17 @@
     top.appendChild(left);
     if (d.status) top.appendChild(gasStatusPill(d.status));
     wrap.appendChild(top);
-    [['Zero', d.baca_zero, d.standar_zero, d.deviasi_zero, d.tol_zero, 'unit'],
+    // Satu iterasi kini hanya berisi SATU sisi (zero atau span sesuai fase) -
+    // sisi yang tidak diisi dilewati saja, bukan ditampilkan sebagai "-".
+    var analyzer = gasCurrentSesi ? gasAnalyzerById(gasCurrentSesi.id_analyzer) : null;
+    var satuanZero = analyzer && analyzer.satuan ? analyzer.satuan : 'unit';
+    [['Zero', d.baca_zero, d.standar_zero, d.deviasi_zero, d.tol_zero, satuanZero],
      ['Span', d.baca_span, d.standar_span, d.deviasi_span, d.tol_span, '%']].forEach(function(p){
+      if (p[1] === '' || p[1] === undefined || p[1] === null) return;
       var r = document.createElement('div'); r.className = 'pmw-readonly';
       r.innerHTML = '<span>' + p[0] + ' &middot; baca / standar</span><b>' +
-        (p[1] || '-') + ' / ' + (p[2] || '-') +
-        '<span style="opacity:.7"> &nbsp;dev ' + (p[3] || '-') + p[5] + ' (tol ' + (p[4] || '-') + p[5] + ')</span></b>';
+        p[1] + ' / ' + gasDisp_(p[2]) +
+        '<span style="opacity:.7"> &nbsp;dev ' + gasDisp_(p[3]) + p[5] + ' (tol ' + gasDisp_(p[4]) + p[5] + ')</span></b>';
       wrap.appendChild(r);
     });
     if (d.peringatan){
