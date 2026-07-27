@@ -97,6 +97,14 @@
     background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; }
   .pmw-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-radius: 9px; cursor: pointer; }
   .pmw-tab.active { color: var(--text-accent); background: var(--bg-accent); }
+  /* Toggle 2 pilihan (mis. Ya/Tidak) - pola sama dengan segmented tab di atas,
+     dipakai untuk pilihan biner yang tidak perlu dropdown. */
+  .pmw-toggle { display: flex; gap: 6px; padding: 4px; background: var(--surface-0);
+    border: 0.5px solid var(--border); border-radius: 10px; }
+  .pmw-toggle-btn { flex: 1; padding: 9px; font-size: 13px; font-weight: 500; border: none;
+    border-radius: 7px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .pmw-toggle-btn.active { color: var(--text-accent); background: var(--bg-accent); }
+  .pmw-toggle-btn.active.warn { color: var(--text-warning); background: var(--bg-warning); }
   .pmw-main { padding: var(--gutter); padding-bottom: 96px; }
   .pmw-banner { display: none; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; padding: 10px 12px; border-radius: var(--radius); margin-bottom: 12px; }
   .pmw-banner.success { background: var(--bg-success); color: var(--text-success); }
@@ -1206,6 +1214,31 @@
     var el = document.getElementById(id);
     return el ? (el.value || '').trim() : '';
   }
+  // Toggle 2 pilihan (dipakai untuk "Tindakan kalibrasi?") - lebih cepat
+  // disentuh di HP daripada buka dropdown untuk 2 opsi saja. warnActive
+  // opsional: opsi mana yang diberi warna kuning saat aktif (mis. "Ya").
+  function toggleGroup(options, def, id, warnActive){
+    var wrap = document.createElement('div'); wrap.className = 'pmw-toggle'; wrap.id = id;
+    wrap.dataset.value = def;
+    options.forEach(function(opt){
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = opt;
+      b.className = 'pmw-toggle-btn' + (opt === def ? ' active' + (opt === warnActive ? ' warn' : '') : '');
+      b.addEventListener('click', function(){
+        wrap.dataset.value = opt;
+        Array.prototype.forEach.call(wrap.children, function(c){
+          c.classList.toggle('active', c === b);
+          c.classList.toggle('warn', c === b && opt === warnActive);
+        });
+      });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+  function gasToggleVal(id){
+    var el = document.getElementById(id);
+    return el ? el.dataset.value : '';
+  }
   // Tahap 100% ditentukan oleh fase (zero/span) + urutan percobaan DALAM fase
   // itu, dipakai di form (tampilan) dan saat submit (payload) supaya keduanya
   // tidak pernah beda. Kata "Verifikasi Zero"/"Verifikasi Span" di depan juga
@@ -1630,7 +1663,7 @@
       c.appendChild(rs);
     }
 
-    c.appendChild(field('Tindakan kalibrasi?', select(['Tidak', 'Ya'], 'Tidak', 'pwGasTindakan')));
+    c.appendChild(field('Tindakan kalibrasi?', toggleGroup(['Tidak', 'Ya'], 'Tidak', 'pwGasTindakan', 'Ya')));
 
     var ta = document.createElement('textarea'); ta.id = 'pwGasIterCatatan'; ta.rows = 2; ta.placeholder = 'Opsional';
     c.appendChild(field('Catatan', ta));
@@ -1719,7 +1752,7 @@
       baca_span: fase === 'span' ? bacaan : '',
       tol_zero: fase === 'zero' ? gasVal('pwGasTolZero') : '',
       tol_span: fase === 'span' ? gasVal('pwGasTolSpan') : '',
-      tindakan: gasVal('pwGasTindakan') || 'Tidak',
+      tindakan: gasToggleVal('pwGasTindakan') || 'Tidak',
       catatan: document.getElementById('pwGasIterCatatan').value || ''
     };
     var label = btn.innerHTML;
