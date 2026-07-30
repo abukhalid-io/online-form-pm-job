@@ -7,7 +7,8 @@
  * Frontend (index.html) di-host terpisah di Netlify, dan memanggil Web App
  * ini lewat fetch() sebagai API JSON biasa:
  *
- *   GET  ?action=list                -> daftar kode panel yang sudah ada
+ *   GET  ?action=list                -> daftar kode panel yang sudah ada (dari histori ControlPanel)
+ *   GET  ?action=panelMaster         -> daftar tag panel + lokasi (dari sheet "list panel")
  *   GET  ?action=template&panel=XXX  -> template komponen utk 1 kode panel
  *   GET  ?action=records             -> semua baris data (utk halaman Data)
  *   POST { action: 'submit', data }  -> tambah baris baru
@@ -33,6 +34,7 @@
 
 var SPREADSHEET_ID = '1eZ0rqnA9dg97F4xPR8bJeL3E1qP6-qzw9tevflx2a_A';
 var SHEET_NAME = 'ControlPanel';
+var LIST_PANEL_SHEET = 'list panel';
 
 // Urutan header persis harus sama dengan urutan kolom di sheet (mulai kolom A).
 // 29 kolom pertama = struktur lama (sudah ada). 9 kolom terakhir = BARU,
@@ -55,6 +57,8 @@ function doGet(e) {
   try {
     if (action === 'list') {
       result = { success: true, data: getPanelList() };
+    } else if (action === 'panelMaster') {
+      result = { success: true, data: getPanelMasterList() };
     } else if (action === 'template') {
       result = { success: true, data: getPanelTemplate(e.parameter.panel) };
     } else if (action === 'records') {
@@ -151,6 +155,55 @@ function getPanelList() {
   var unique = Array.from(new Set(values));
   unique.sort();
   return unique;
+}
+
+/**
+ * Daftar master tag PANEL + lokasinya, dari sheet "list panel" (diisi manual
+ * oleh teknisi, terpisah dari histori ControlPanel). Header dicari otomatis
+ * di antara 5 baris pertama (baris yang salah satu selnya mengandung kata
+ * "tag"), supaya tidak bergantung pada baris tetap kalau sheet ditata ulang.
+ */
+function getPanelMasterList() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(LIST_PANEL_SHEET);
+  if (!sheet) return [];
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) return [];
+
+  var probe = sheet.getRange(1, 1, Math.min(lastRow, 5), lastCol).getValues();
+  var headerRow = -1, tagCol = -1, lokasiCol = -1;
+  for (var r = 0; r < probe.length && tagCol === -1; r++) {
+    for (var c = 0; c < probe[r].length; c++) {
+      if (String(probe[r][c]).trim().toLowerCase().indexOf('tag') > -1) {
+        headerRow = r; tagCol = c; break;
+      }
+    }
+  }
+  if (tagCol === -1) return [];
+  var hdr = probe[headerRow];
+  for (var c2 = 0; c2 < hdr.length; c2++) {
+    var h2 = String(hdr[c2]).trim().toLowerCase();
+    if (h2.indexOf('lokasi') > -1 || h2.indexOf('location') > -1) { lokasiCol = c2; break; }
+  }
+
+  var dataStartRow = headerRow + 2; // 1-indexed, baris setelah header
+  if (dataStartRow > lastRow) return [];
+  var data = sheet.getRange(dataStartRow, 1, lastRow - dataStartRow + 1, lastCol).getValues();
+  // Sheet ini juga berisi baris rekap per grup (mis. "KELOMPOK BJA (45 tag)")
+  // dan judul kolom di luar header (mis. "TAG PANEL - DAFTAR GOOGLE SHEET
+  // (18 tag)") yang dipakai user untuk hitung manual, BUKAN tag panel
+  // sungguhan - harus dibuang supaya tidak muncul sebagai pilihan teknisi.
+  var isRecapRow_ = function (tag) { return /\(\s*\d+\s*tag\s*\)\s*$/i.test(tag); };
+
+  var out = [];
+  data.forEach(function (row) {
+    var tag = String(row[tagCol] || '').trim();
+    if (!tag || isRecapRow_(tag)) return;
+    out.push({ tag: tag, lokasi: lokasiCol > -1 ? String(row[lokasiCol] || '').trim() : '' });
+  });
+  out.sort(function (a, b) { return a.tag.localeCompare(b.tag); });
+  return out;
 }
 
 /**
